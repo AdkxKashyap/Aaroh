@@ -2,29 +2,28 @@
 Application Entry Point
 
 Responsibility:
-    Creates the FastAPI application.
-
-Why this file exists:
-    This is the starting point of our backend application.
-    Every incoming HTTP request enters through this application.
-
-Current Scope:
-    Only creates the application and exposes a health endpoint.
+    Creates and configures the FastAPI application.
 """
 
 from fastapi import FastAPI
 
+from src.config.settings import get_settings
+
+settings = get_settings()
+
 app = FastAPI(
-    title="School Operations Agent",
-    version="1.0.0",
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
 )
 
 
 @app.get("/")
 def root():
     """
-    Root endpoint used to verify that the application is running.
+    Root endpoint to verify the application is running.
     """
     return {
-        "message": "Aaroh Agent Backend is running."
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "environment": settings.APP_ENV,
     }
