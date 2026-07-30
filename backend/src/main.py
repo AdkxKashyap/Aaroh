@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from src.config.settings import get_settings
 from src.core.logger import configure_logging
 from src.middleware.logging import LoggingMiddleware
+from sqlalchemy import text
+from src.db.database import engine
 
 configure_logging()
 
@@ -21,6 +23,18 @@ app = FastAPI(
 )
 
 app.add_middleware(LoggingMiddleware)
+
+
+@app.get("/health/db")
+async def database_health():
+    """
+    Verify database connectivity.
+    """
+
+    async with engine.begin() as connection:
+        await connection.execute(text("SELECT 1"))
+
+    return {"status": "Database Connected"}
 
 
 @app.get("/")

@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     APP_ENV: str
     DEBUG: bool
     API_PREFIX: str
+    DATABASE_URL: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
