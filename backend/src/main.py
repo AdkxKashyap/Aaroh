@@ -13,6 +13,8 @@ from src.core.logger import configure_logging
 from src.middleware.logging import LoggingMiddleware
 from sqlalchemy import text
 from src.db.database import engine
+from src.api.routers.auth import router as auth_router
+
 
 configure_logging()
 
@@ -25,7 +27,7 @@ app = FastAPI(
 
 app.add_middleware(LoggingMiddleware)
 app.include_router(health.router)
-
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
