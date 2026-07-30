@@ -8,6 +8,10 @@ Responsibility:
 from fastapi import FastAPI
 
 from src.config.settings import get_settings
+from src.core.logger import configure_logging
+from src.middleware.logging import LoggingMiddleware
+
+configure_logging()
 
 settings = get_settings()
 
@@ -15,6 +19,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
 )
+
+app.add_middleware(LoggingMiddleware)
 
 
 @app.get("/")
