@@ -1,0 +1,25 @@
+"""
+User Schemas
+
+Responsibility:
+    Defines request and response models for user APIs.
+"""
+
+from uuid import UUID
+
+from pydantic import BaseModel, EmailStr
+
+
+class UserRegistrationRequest(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: UUID
+    username: str
+    email: EmailStr
+
+    class Config:
+        from_attributes = True

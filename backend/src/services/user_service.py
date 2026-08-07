@@ -12,6 +12,8 @@ from uuid import UUID
 
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
+from src.core.security import hash_password
+from src.models.user import User
 
 
 class UserService:
@@ -19,10 +21,23 @@ class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
 
-    async def create_user(self, user: User) -> User:
-        """
-        Create a new user.
-        """
+    async def register_user(
+    self,
+    username: str,
+    email: str,
+    password: str,
+) -> User:
+        existing_user = await self.repository.get_by_username(username)
+
+        if existing_user:
+            raise ValueError("Username already exists.")
+
+        user = User(
+            username=username,
+            email=email,
+            password_hash=hash_password(password),
+    )
+
         return await self.repository.create(user)
 
     async def get_user(self, user_id: UUID) -> User | None:
