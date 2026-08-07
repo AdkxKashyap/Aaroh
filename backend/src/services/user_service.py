@@ -8,13 +8,12 @@ Used By:
     User APIs
 """
 
-import structlog
 from uuid import UUID
 
-from src.models.user import User
-from src.repositories.user_repository import UserRepository
+import structlog
 from src.core.security import hash_password
 from src.models.user import User
+from src.repositories.user_repository import UserRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -78,3 +77,14 @@ async def update_user(
     logger.info("Updating user", user_id=user.id)
 
     return await self.repository.update(user)
+
+
+async def get_user_with_roles(
+    self,
+    user_id: UUID,
+) -> User | None:
+    """
+    Fetch user along with assigned roles.
+    """
+
+    return await self.repository.get_by_id_with_roles(user_id)

@@ -45,12 +45,16 @@ def get_user_service(
 
 
 def get_role_service(
-    repository: Annotated[
+    role_repository: Annotated[
         RoleRepository,
         Depends(get_role_repository),
     ],
+    user_repository: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
+    ],
 ) -> RoleService:
-    return RoleService(repository)
+    return RoleService(role_repository, user_repository)
 
 
 def get_auth_service(
