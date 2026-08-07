@@ -12,12 +12,14 @@ Responsibility:
     Creates repository instances.
 """
 
-from fastapi import Depends
+from typing import Annotated
 
+from fastapi import Depends
 from src.dependencies.database import DbSession
 from src.repositories.role_repository import RoleRepository
+from src.repositories.school_class_repository import SchoolClassRepository
+from src.repositories.school_repository import SchoolRepository
 from src.repositories.user_repository import UserRepository
-from typing import Annotated
 from src.services.auth_service import AuthService
 from src.services.role_service import RoleService
 from src.services.user_service import UserService
@@ -64,3 +66,23 @@ def get_auth_service(
     ],
 ) -> AuthService:
     return AuthService(repository)
+
+
+def get_school_repository(
+    db: DbSession,
+) -> SchoolRepository:
+    """
+    Creates SchoolRepository.
+    """
+
+    return SchoolRepository(db)
+
+
+def get_school_class_repository(
+    db: DbSession,
+) -> SchoolClassRepository:
+    """
+    Creates SchoolClassRepository.
+    """
+
+    return SchoolClassRepository(db)
