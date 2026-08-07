@@ -2,14 +2,15 @@
 Authentication Service
 
 Responsibility:
-    Handles authentication business logic.
+    Handles user authentication.
 """
 
-from src.core.security import (
-    create_access_token,
-    verify_password,
-)
+import structlog
+
+from src.core.security import create_access_token, verify_password
 from src.repositories.user_repository import UserRepository
+
+logger = structlog.get_logger(__name__)
 
 
 class AuthService:
@@ -23,15 +24,33 @@ class AuthService:
         password: str,
     ) -> str | None:
         """
-        Authenticate user and return JWT token.
+        Authenticate user and return JWT.
         """
+
+        logger.info(
+            "User login started",
+            username=username,
+        )
 
         user = await self.repository.get_by_username(username)
 
         if not user:
+            logger.warning(
+                "User not found",
+                username=username,
+            )
             return None
 
         if not verify_password(password, user.password_hash):
+            logger.warning(
+                "Invalid password",
+                username=username,
+            )
             return None
 
-        return create_access_token(user.username)
+        logger.info(
+            "User login successful",
+            user_id=user.id,
+        )
+
+        return create_access_token(str(user.id))

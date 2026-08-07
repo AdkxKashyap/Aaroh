@@ -1,50 +1,60 @@
-"""
-Authentication APIs
+from typing import Annotated
 
-Note:
-    Temporary hardcoded user.
-    Will be replaced with database authentication
-    in the Identity module.
-"""
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from fastapi import APIRouter, HTTPException, Depends
-
+from src.dependencies.services import get_auth_service
+from src.schemas.auth import LoginRequest, TokenResponse
+from src.services.auth_service import AuthService
 from src.core.auth import get_current_user
-from src.core.security import (
-    create_access_token,
-    verify_password,
-)
-from src.schemas.auth import (
-    LoginRequest,
-    TokenResponse,
-)
+from src.models.user import User
 
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"],
 )
 
-DEMO_USER = "admin"
-DEMO_PASSWORD_HASH = "$2b$12$iPSoLPzGYH.DYfFpY6VB0.JGAINWVebYkFQpbIS804OLhl8tmLRd6"  # Replace with hash_password("admin123")
 
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+)
+async def login(
+    request: LoginRequest,
+    service: Annotated[
+        AuthService,
+        Depends(get_auth_service),
+    ],
+):
+    """
+    Authenticate user.
+    """
 
-@router.post("/login", response_model=TokenResponse)
-async def login(request: LoginRequest):
-
-    if request.username != DEMO_USER or not verify_password(
+    token = await service.authenticate(
+        request.username,
         request.password,
-        DEMO_PASSWORD_HASH,
-    ):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    )
 
-    token = create_access_token(request.username)
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password.",
+        )
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-    }
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+    )
 
 
 @router.get("/me")
-async def me(user: str = Depends(get_current_user)):
-    return {"username": user}
+async def me(
+    user: Annotated[
+        User,
+        Depends(get_current_user),
+    ],
+):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
