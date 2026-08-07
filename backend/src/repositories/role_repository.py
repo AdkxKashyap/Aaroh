@@ -8,13 +8,12 @@ Used By:
     RoleService
 """
 
-import structlog
 import uuid
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.role import Role
 from src.models.user import User
 from src.models.user_role import UserRole
@@ -43,6 +42,35 @@ class RoleRepository:
             logger.exception(
                 "Failed to create role",
                 role_name=role.name,
+            )
+            raise
+
+    async def get_user_role(
+        self,
+        user_id: uuid.UUID,
+        role_id: uuid.UUID,
+    ) -> UserRole | None:
+        """
+        Fetch a user-role mapping.
+
+        Used to prevent duplicate role assignments.
+        """
+
+        try:
+            result = await self.db.execute(
+                select(UserRole).where(
+                    UserRole.user_id == user_id,
+                    UserRole.role_id == role_id,
+                )
+            )
+
+            return result.scalar_one_or_none()
+
+        except SQLAlchemyError:
+            logger.exception(
+                "Failed to fetch user role",
+                user_id=user_id,
+                role_id=role_id,
             )
             raise
 

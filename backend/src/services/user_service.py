@@ -48,6 +48,16 @@ class UserService:
         """
         return await self.repository.get_by_id(user_id)
 
+    async def get_user_with_roles(
+        self,
+        user_id: UUID,
+    ) -> User | None:
+        """
+        Fetch user along with assigned roles.
+        """
+
+        return await self.repository.get_by_id_with_roles(user_id)
+
     async def get_by_username(self, username: str) -> User | None:
         return await self.repository.get_by_username(username)
 
@@ -77,14 +87,3 @@ async def update_user(
     logger.info("Updating user", user_id=user.id)
 
     return await self.repository.update(user)
-
-
-async def get_user_with_roles(
-    self,
-    user_id: UUID,
-) -> User | None:
-    """
-    Fetch user along with assigned roles.
-    """
-
-    return await self.repository.get_by_id_with_roles(user_id)

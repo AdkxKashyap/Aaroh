@@ -5,9 +5,9 @@ Responsibility:
     Handles business logic related to roles.
 """
 
-import structlog
 import uuid
 
+import structlog
 from src.models.role import Role
 from src.models.user_role import UserRole
 from src.repositories.role_repository import RoleRepository
@@ -96,7 +96,19 @@ class RoleService:
 
         if role is None:
             raise ValueError("Role not found.")
+        existing_user_role = await self.role_repository.get_user_role(
+            user_id=user_id,
+            role_id=role_id,
+        )
 
+        if existing_user_role:
+            logger.warning(
+                "Role already assigned",
+                user_id=user_id,
+                role_id=role_id,
+            )
+
+            raise ValueError("Role already assigned.")
         return await self.role_repository.assign_role(
             user,
             role,

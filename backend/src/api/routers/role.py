@@ -5,11 +5,11 @@ Responsibility:
     Role management.
 """
 
-from typing import Annotated
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-
+from src.core.auth import get_current_user
 from src.dependencies.services import get_role_service
 from src.schemas.role import (
     AssignRoleRequest,
@@ -28,6 +28,7 @@ router = APIRouter(
     "",
     response_model=RoleResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(get_current_user)],
 )
 async def create_role(
     request: CreateRoleRequest,
@@ -52,6 +53,7 @@ async def create_role(
 @router.get(
     "",
     response_model=list[RoleResponse],
+    dependencies=[Depends(get_current_user)],
 )
 async def get_roles(
     service: Annotated[
@@ -64,6 +66,7 @@ async def get_roles(
 
 @router.post(
     "/users/{user_id}",
+    dependencies=[Depends(get_current_user)],
 )
 async def assign_role(
     user_id: uuid.UUID,
