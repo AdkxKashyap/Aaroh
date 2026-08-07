@@ -48,7 +48,7 @@ async def get_current_user(
     return user
 
 
-async def require_role(
+def require_role(
     role_name: str,
 ):
     """

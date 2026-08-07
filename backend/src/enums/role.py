@@ -7,10 +7,10 @@ Responsibility:
 Use this enum instead of hardcoding role names.
 """
 
-from enum import StrEnum
+from enum import Enum
 
 
-class RoleName(StrEnum):
+class RoleName(str, Enum):
     ADMIN = "ADMIN"
     TEACHER = "TEACHER"
     STUDENT = "STUDENT"
