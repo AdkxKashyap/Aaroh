@@ -22,6 +22,8 @@ from src.repositories.school_repository import SchoolRepository
 from src.repositories.user_repository import UserRepository
 from src.services.auth_service import AuthService
 from src.services.role_service import RoleService
+from src.services.school_class_service import SchoolClassService
+from src.services.school_service import SchoolService
 from src.services.user_service import UserService
 
 
@@ -86,3 +88,36 @@ def get_school_class_repository(
     """
 
     return SchoolClassRepository(db)
+
+
+def get_school_service(
+    repository: Annotated[
+        SchoolRepository,
+        Depends(get_school_repository),
+    ],
+) -> SchoolService:
+    """
+    Creates SchoolService.
+    """
+
+    return SchoolService(repository)
+
+
+def get_school_class_service(
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
+    school_repository: Annotated[
+        SchoolRepository,
+        Depends(get_school_repository),
+    ],
+) -> SchoolClassService:
+    """
+    Creates SchoolClassService.
+    """
+
+    return SchoolClassService(
+        class_repository=class_repository,
+        school_repository=school_repository,
+    )
