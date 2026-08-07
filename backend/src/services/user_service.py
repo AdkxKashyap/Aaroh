@@ -8,12 +8,15 @@ Used By:
     User APIs
 """
 
+import structlog
 from uuid import UUID
 
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
 from src.core.security import hash_password
 from src.models.user import User
+
+logger = structlog.get_logger(__name__)
 
 
 class UserService:
@@ -22,11 +25,11 @@ class UserService:
         self.repository = repository
 
     async def register_user(
-    self,
-    username: str,
-    email: str,
-    password: str,
-) -> User:
+        self,
+        username: str,
+        email: str,
+        password: str,
+    ) -> User:
         existing_user = await self.repository.get_by_username(username)
 
         if existing_user:
@@ -36,7 +39,7 @@ class UserService:
             username=username,
             email=email,
             password_hash=hash_password(password),
-    )
+        )
 
         return await self.repository.create(user)
 
@@ -54,3 +57,24 @@ class UserService:
 
     async def delete_user(self, user: User) -> None:
         await self.repository.delete(user)
+
+
+async def update_user(
+    self,
+    user_id: UUID,
+    email: str,
+    is_active: bool,
+) -> User | None:
+
+    user = await self.repository.get_by_id(user_id)
+
+    if user is None:
+        logger.warning("User not found", user_id=user_id)
+        return None
+
+    user.email = email
+    user.is_active = is_active
+
+    logger.info("Updating user", user_id=user.id)
+
+    return await self.repository.update(user)

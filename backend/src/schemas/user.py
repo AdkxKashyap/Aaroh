@@ -16,6 +16,11 @@ class UserRegistrationRequest(BaseModel):
     password: str
 
 
+class UserUpdateRequest(BaseModel):
+    email: EmailStr
+    is_active: bool
+
+
 class UserResponse(BaseModel):
     id: UUID
     username: str

@@ -64,3 +64,11 @@ class UserRepository:
         """
         await self.db.delete(user)
         await self.db.commit()
+
+    async def update(self, user: User) -> User:
+        """
+        Update an existing user.
+        """
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
