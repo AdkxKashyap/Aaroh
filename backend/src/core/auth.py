@@ -49,13 +49,18 @@ async def get_current_user(
 
 
 def require_role(
-    role_name: str,
+    *role_names: str,
 ):
     """
     Authorization dependency.
 
-    Ensures current user has the required role.
+    Ensures current user has at least one of the required roles.
     """
+
+    if len(role_names) == 1 and isinstance(role_names[0], (list, tuple, set)):
+        role_names = tuple(role_names[0])
+
+    required_roles = set(role_names)
 
     async def dependency(
         current_user: Annotated[
@@ -65,13 +70,13 @@ def require_role(
     ):
 
         for user_role in current_user.roles:
-            if user_role.role.name == role_name:
+            if user_role.role.name in required_roles:
                 return current_user
 
         logger.warning(
             "Authorization failed",
             user_id=current_user.id,
-            required_role=role_name,
+            required_roles=required_roles,
         )
 
         raise HTTPException(
