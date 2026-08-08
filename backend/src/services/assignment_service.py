@@ -1,15 +1,13 @@
-
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 
-from src.models.user import User
+from src.core.logger import logger
 from src.models.assignment import Assignment
-from src.repositories.teacher_class_repository import TeacherClassRepository
-from src.repositories.teacher_class_repository import TeacherClassRepository
-from src.repositories.school_class_repository import SchoolClassRepository
+from src.models.user import User
 from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.school_class_repository import SchoolClassRepository
-from src.core.logger import logger
+from src.repositories.teacher_class_repository import TeacherClassRepository
+
 
 class AssignmentService:
 
@@ -92,27 +90,26 @@ class AssignmentService:
 
             raise
 
+    async def get_assignments(
+        self,
+        current_user: User,
+        class_id: uuid.UUID,
+    ) -> list[Assignment]:
+        school_class = await self.class_repository.get_by_id(
+            class_id,
+        )
 
-async def get_assignments(
-    self,
-    current_user: User,
-    class_id: uuid.UUID,
-) -> list[Assignment]:
-    school_class = await self.class_repository.get_by_id(
-        class_id,
-    )
+        if school_class is None:
+            raise ValueError("Class not found.")
 
-    if school_class is None:
-        raise ValueError("Class not found.")
+        mapping = await self.teacher_class_repository.get(
+            current_user.id,
+            class_id,
+        )
 
-    mapping = await self.teacher_class_repository.get(
-        current_user.id,
-        class_id,
-    )
+        if mapping is None:
+            raise ValueError("Teacher is not assigned to this class.")
 
-    if mapping is None:
-        raise ValueError("Teacher is not assigned to this class.")
-
-    return await self.assignment_repository.get_by_class(
-        class_id,
-    )
+        return await self.assignment_repository.get_by_class(
+            class_id,
+        )

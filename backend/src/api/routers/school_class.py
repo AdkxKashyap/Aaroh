@@ -69,12 +69,14 @@ async def get_classes(
 
 
 @router.get(
-    "/{teacher_id}",
-    dependencies=[Depends(require_role(RoleName.ADMIN, RoleName.TEACHER))],
+    "/classes-by-teacher",
     response_model=list[SchoolClassResponse],
 )
 async def get_classes_by_teacher(
-    teacher_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.ADMIN, RoleName.TEACHER)),
+    ],
     service: Annotated[
         SchoolClassService,
         Depends(get_school_class_service),
@@ -85,5 +87,5 @@ async def get_classes_by_teacher(
     """
 
     return await service.get_class_by_teacher(
-        teacher_id=teacher_id,
+        teacher_id=current_user.id,
     )
