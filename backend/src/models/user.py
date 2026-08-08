@@ -5,10 +5,13 @@ Responsibility:
     Stores application users.
 """
 
-from sqlalchemy import Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from uuid import UUID
 
+from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.base import BaseModel
+
+from src.models.school import School
 
 
 class User(BaseModel):
@@ -46,3 +49,19 @@ class User(BaseModel):
         "UserRole",
         back_populates="user",
     )
+
+    """
+    School this user belongs to.
+
+    NULL:
+        User has not registered/joined a school yet.
+    """
+
+    school_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("schools.id"),
+        nullable=True,
+    )
+    """
+    No relationship added for now.
+    """
+    school: Mapped["School | None"] = relationship()
