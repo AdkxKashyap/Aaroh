@@ -98,8 +98,8 @@ class StudentService:
                 raise ValueError("Student role not found.")
 
             await self.role_repository.assign_role(
-                user_id=student_user.id,
-                role_id=student_role.id,
+                student_user,
+                student_role,
             )
 
             student = Student(
@@ -158,4 +158,21 @@ class StudentService:
 
         return await self.student_repository.get_by_class(
             class_id,
+        )
+
+    async def get_by_user_id(
+        self,
+        user_id: uuid.UUID,
+    ) -> Student | None:
+        """
+        Get student profile by authenticated user id.
+        """
+
+        logger.info(
+            "Fetching student profile",
+            user_id=user_id,
+        )
+
+        return await self.student_repository.get_by_user_id(
+            user_id,
         )
