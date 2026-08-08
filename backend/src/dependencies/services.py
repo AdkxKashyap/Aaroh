@@ -91,16 +91,20 @@ def get_school_class_repository(
 
 
 def get_school_service(
-    repository: Annotated[
+    school_repository: Annotated[
         SchoolRepository,
         Depends(get_school_repository),
+    ],
+    user_repository: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
     ],
 ) -> SchoolService:
     """
     Creates SchoolService.
     """
 
-    return SchoolService(repository)
+    return SchoolService(school_repository, user_repository)
 
 
 def get_school_class_service(

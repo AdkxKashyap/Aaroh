@@ -12,7 +12,9 @@ import uuid
 
 import structlog
 from src.models.school import School
+from src.models.user import User
 from src.repositories.school_repository import SchoolRepository
+from src.repositories.user_repository import UserRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -21,9 +23,11 @@ class SchoolService:
 
     def __init__(
         self,
-        repository: SchoolRepository,
+        school_repository: SchoolRepository,
+        user_repository: UserRepository,
     ):
-        self.repository = repository
+        self.school_repository = school_repository
+        self.user_repository = user_repository
 
     async def create_school(
         self,
@@ -39,7 +43,7 @@ class SchoolService:
             school_name=name,
         )
 
-        existing_school = await self.repository.get_by_name(name)
+        existing_school = await self.school_repository.get_by_name(name)
 
         if existing_school:
             logger.warning(
@@ -54,7 +58,7 @@ class SchoolService:
         )
 
         try:
-            school = await self.repository.create(school)
+            school = await self.school_repository.create(school)
 
             logger.info(
                 "School created successfully",
@@ -68,6 +72,57 @@ class SchoolService:
                 "Failed to create school",
                 school_name=name,
             )
+            raise
+
+    async def register_school(
+        self,
+        current_user: User,
+        name: str,
+        address: str | None,
+    ) -> School:
+        """
+        Register a school and link it to the current admin.
+        """
+
+        logger.info(
+            "Registering school",
+            user_id=current_user.id,
+            school_name=name,
+        )
+
+        if current_user.school_id is not None:
+
+            logger.warning(
+                "User already belongs to a school",
+                user_id=current_user.id,
+            )
+
+            raise ValueError("User already belongs to a school.")
+
+        existing_school = await self.school_repository.get_by_name(name)
+
+        if existing_school:
+            logger.warning(
+                "School already exists",
+                school_name=name,
+            )
+            raise ValueError("School already exists.")
+        school = School(
+            name=name,
+            address=address,
+        )
+        try:
+            return await self.school_repository.register_school(
+                school=school,
+                user=current_user,
+            )
+        except Exception:
+
+            logger.exception(
+                "Failed to register school",
+                user_id=current_user.id,
+            )
+
             raise
 
     async def get_school(

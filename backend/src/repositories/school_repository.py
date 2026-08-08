@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.models.school import School
+from src.models.user import User
 
 logger = structlog.get_logger(__name__)
 
@@ -44,6 +45,41 @@ class SchoolRepository:
             logger.exception(
                 "Failed to create school",
                 school_name=school.name,
+            )
+            raise
+# TODO:
+# This method manages a cross-aggregate transaction.
+# As we migrate to service-managed transactions (Unit of Work),
+# move transaction ownership to the service layer and remove this method.
+    async def register_school(
+        self,
+        school: School,
+        user: User,
+    ) -> School:
+        """
+        Atomically registers a school and links it to the admin user.
+        """
+
+        try:
+            self.db.add(school)
+
+            await self.db.flush()
+
+            user.school_id = school.id
+
+            await self.db.commit()
+
+            await self.db.refresh(school)
+
+            return school
+
+        except SQLAlchemyError:
+            await self.db.rollback()
+
+            logger.exception(
+                "Failed to register school",
+                school_name=school.name,
+                user_id=user.id,
             )
             raise
 

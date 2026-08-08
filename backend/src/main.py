@@ -6,11 +6,11 @@ Responsibility:
 """
 
 from fastapi import FastAPI
-
 from src.api.routers.auth import router as auth_router
 from src.api.routers.health import router as health_router
-from src.api.routers.user import router as user_router
 from src.api.routers.role import router as role_router
+from src.api.routers.school import router as school_router
+from src.api.routers.user import router as user_router
 from src.config.settings import get_settings
 from src.core.logger import configure_logging
 from src.middleware.logging import LoggingMiddleware
@@ -29,6 +29,7 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(role_router)
+app.include_router(school_router)
 
 
 @app.get("/")
