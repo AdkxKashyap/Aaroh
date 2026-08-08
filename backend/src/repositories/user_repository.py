@@ -8,17 +8,20 @@ Used By:
     UserService
 """
 
+from unittest import result
 from uuid import UUID
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.models.user import User
 from src.models.user_role import UserRole
-from sqlalchemy.exc import SQLAlchemyError
 
 logger = structlog.get_logger(__name__)
+
+
 class UserRepository:
 
     def __init__(self, db: AsyncSession):
@@ -77,9 +80,9 @@ class UserRepository:
         return user
 
     async def get_by_id_with_roles(
-    self,
-    user_id: UUID,
-) -> User | None:
+        self,
+        user_id: UUID,
+    ) -> User | None:
         """
         Fetch user along with assigned roles.
 
@@ -95,9 +98,7 @@ class UserRepository:
         try:
             result = await self.db.execute(
                 select(User)
-                .options(
-                    selectinload(User.roles).selectinload(UserRole.role)
-                )
+                .options(selectinload(User.roles).selectinload(UserRole.role))
                 .where(User.id == user_id)
             )
 
@@ -107,5 +108,26 @@ class UserRepository:
             logger.exception(
                 "Failed to fetch user with roles",
                 user_id=user_id,
+            )
+            raise
+
+    async def get_by_school(self, school_id: UUID) -> list[User]:
+        """
+        Fetch all users belonging to a specific school.
+        """
+
+        try:
+            result = await self.db.execute(
+                select(User)
+                .options(selectinload(User.roles).selectinload(UserRole.role))
+                .where(User.school_id == school_id)
+            )
+
+            return list(result.scalars().all())
+
+        except SQLAlchemyError:
+            logger.exception(
+                "Failed to fetch users by school",
+                school_id=school_id,
             )
             raise

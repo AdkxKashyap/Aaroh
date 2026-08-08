@@ -25,9 +25,8 @@ from src.services.auth_service import AuthService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
-from src.services.user_service import UserService
-
 from src.services.teacher_service import TeacherService
+from src.services.user_service import UserService
 
 
 def get_user_repository(
@@ -153,13 +152,23 @@ def get_teacher_service(
         UserRepository,
         Depends(get_user_repository),
     ],
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service),
+    ],
+    role_repository: Annotated[
+        RoleRepository,
+        Depends(get_role_repository),
+    ],
 ) -> TeacherService:
     """
     Creates TeacherService.
     """
 
     return TeacherService(
-        teacher_class_repository=teacher_class_repository,
-        class_repository=class_repository,
+        user_service=user_service,
         user_repository=user_repository,
+        role_repository=role_repository,
+        class_repository=class_repository,
+        teacher_class_repository=teacher_class_repository,
     )

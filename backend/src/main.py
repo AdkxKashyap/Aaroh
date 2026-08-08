@@ -10,8 +10,9 @@ from src.api.routers.auth import router as auth_router
 from src.api.routers.health import router as health_router
 from src.api.routers.role import router as role_router
 from src.api.routers.school import router as school_router
-from src.api.routers.user import router as user_router
 from src.api.routers.school_class import router as class_router
+from src.api.routers.teacher import router as teacher_router
+from src.api.routers.user import router as user_router
 from src.config.settings import get_settings
 from src.core.logger import configure_logging
 from src.middleware.logging import LoggingMiddleware
@@ -32,6 +33,8 @@ app.include_router(user_router)
 app.include_router(role_router)
 app.include_router(school_router)
 app.include_router(class_router)
+app.include_router(teacher_router)
+
 
 @app.get("/")
 def root():

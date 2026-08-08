@@ -14,6 +14,8 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.models.teacher_class import TeacherClass
+from src.models.teacher_class import TeacherClass
 from src.models.school_class import SchoolClass
 
 logger = structlog.get_logger(__name__)
@@ -117,7 +119,29 @@ class SchoolClassRepository:
                 class_name=name,
             )
             raise
+    async def get_by_teacher(
+        self,
+        teacher_id: uuid.UUID,
+    ) -> list[SchoolClass]:
+        """
+        Fetch all classes assigned to a teacher.
+        """
 
+        try:
+            result = await self.db.execute(
+                select(SchoolClass)
+                .join(TeacherClass, TeacherClass.class_id == SchoolClass.id)
+                .where(TeacherClass.teacher_id == teacher_id)
+            )
+
+            return list(result.scalars().all())
+
+        except SQLAlchemyError:
+            logger.exception(
+                "Failed to fetch classes by teacher",
+                teacher_id=teacher_id,
+            )
+            raise
     async def update(
         self,
         school_class: SchoolClass,

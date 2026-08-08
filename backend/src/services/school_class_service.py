@@ -110,3 +110,13 @@ class SchoolClassService:
         )
 
         await self.class_repository.delete(school_class)
+
+    async def get_class_by_teacher(
+        self,
+        teacher_id: uuid.UUID,
+    ) -> list[SchoolClass]:
+        """
+        Fetch all classes assigned to a teacher.
+        """
+
+        return await self.class_repository.get_by_teacher(teacher_id)
