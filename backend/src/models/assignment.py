@@ -20,9 +20,9 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from src.models.base import BaseModel
 from src.models.school_class import SchoolClass
 from src.models.user import User
-from src.models.base import BaseModel
 
 
 class Assignment(BaseModel):
@@ -53,7 +53,10 @@ class Assignment(BaseModel):
         nullable=False,
     )
 
-    teacher: Mapped["User"] = relationship()
+    teacher: Mapped["User"] = relationship(
+        foreign_keys=[teacher_id],
+    )
 
-    school_class: Mapped["SchoolClass"] = relationship()
-    
+    school_class: Mapped["SchoolClass"] = relationship(
+        foreign_keys=[class_id],
+    )

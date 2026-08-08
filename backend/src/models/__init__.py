@@ -7,3 +7,4 @@ from .school_class import SchoolClass
 from .teacher_class import TeacherClass
 from .user import User
 from .user_role import UserRole
+from .assignment import Assignment
