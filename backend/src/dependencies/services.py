@@ -15,6 +15,7 @@ Responsibility:
 from typing import Annotated
 
 from fastapi import Depends
+from src.repositories.assignment_repository import AssignmentRepository
 from src.dependencies.database import DbSession
 from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
@@ -172,3 +173,12 @@ def get_teacher_service(
         class_repository=class_repository,
         teacher_class_repository=teacher_class_repository,
     )
+
+def get_assignment_repository(
+    db: DbSession,
+) -> AssignmentRepository:
+    """
+    Creates AssignmentRepository.
+    """
+
+    return AssignmentRepository(db)
