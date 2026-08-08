@@ -34,7 +34,7 @@ class SchoolClassRepository:
         try:
             self.db.add(school_class)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(school_class)
 
             return school_class
@@ -151,7 +151,7 @@ class SchoolClassRepository:
 
         try:
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(school_class)
 
             return school_class
@@ -178,8 +178,6 @@ class SchoolClassRepository:
             await self.db.delete(
                 school_class,
             )
-
-            await self.db.commit()
 
         except SQLAlchemyError:
 

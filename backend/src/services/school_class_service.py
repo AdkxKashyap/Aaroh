@@ -8,6 +8,7 @@ Responsibility:
 import uuid
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.models.school_class import SchoolClass
 from src.models.user import User
 from src.repositories.school_class_repository import SchoolClassRepository
@@ -54,7 +55,8 @@ class SchoolClassService:
             name=name,
         )
 
-        return await self.class_repository.create(school_class)
+        async with transactional(self.class_repository.db):
+            return await self.class_repository.create(school_class)
 
     async def get_classes(
         self,
@@ -88,7 +90,8 @@ class SchoolClassService:
 
         school_class.name = name
 
-        return await self.class_repository.update(school_class)
+        async with transactional(self.class_repository.db):
+            return await self.class_repository.update(school_class)
 
     async def delete_class(
         self,
@@ -108,7 +111,8 @@ class SchoolClassService:
             class_id=class_id,
         )
 
-        await self.class_repository.delete(school_class)
+        async with transactional(self.class_repository.db):
+            await self.class_repository.delete(school_class)
 
     async def get_class_by_teacher(
         self,

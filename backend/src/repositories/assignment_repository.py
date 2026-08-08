@@ -33,7 +33,7 @@ class AssignmentRepository:
         try:
             self.db.add(assignment)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(assignment)
 
             return assignment
@@ -112,7 +112,7 @@ class AssignmentRepository:
 
         try:
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(
                 assignment,
             )
@@ -141,8 +141,6 @@ class AssignmentRepository:
             await self.db.delete(
                 assignment,
             )
-
-            await self.db.commit()
 
         except SQLAlchemyError:
 

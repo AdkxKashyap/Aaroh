@@ -32,7 +32,7 @@ class StudentRepository:
         try:
             self.db.add(student)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(student)
 
             logger.info(

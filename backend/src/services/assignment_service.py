@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.enums.assignment import AssignmentStatus
 from src.models.assignment import Assignment
 from src.models.user import User
@@ -99,17 +100,17 @@ class AssignmentService:
         )
 
         try:
+            async with transactional(self.assignment_repository.db):
+                assignment = await self.assignment_repository.create(
+                    assignment,
+                )
 
-            assignment = await self.assignment_repository.create(
-                assignment,
-            )
+                logger.info(
+                    "Assignment created",
+                    assignment_id=assignment.id,
+                )
 
-            logger.info(
-                "Assignment created",
-                assignment_id=assignment.id,
-            )
-
-            return assignment
+                return assignment
 
         except Exception:
 
@@ -190,18 +191,19 @@ class AssignmentService:
         assignment.status = new_status
 
         try:
-            assignment = await self.assignment_repository.update(
-                assignment,
-            )
+            async with transactional(self.assignment_repository.db):
+                assignment = await self.assignment_repository.update(
+                    assignment,
+                )
 
-            logger.info(
-                "Assignment status transitioned",
-                assignment_id=assignment.id,
-                old_status=old_status,
-                new_status=new_status,
-            )
+                logger.info(
+                    "Assignment status transitioned",
+                    assignment_id=assignment.id,
+                    old_status=old_status,
+                    new_status=new_status,
+                )
 
-            return assignment
+                return assignment
 
         except Exception:
             logger.exception(

@@ -11,6 +11,7 @@ Used By:
 import uuid
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.models.school import School
 from src.models.user import User
 from src.repositories.school_repository import SchoolRepository
@@ -56,7 +57,8 @@ class SchoolService:
         )
 
         try:
-            school = await self.school_repository.create(school)
+            async with transactional(self.school_repository.db):
+                school = await self.school_repository.create(school)
 
             logger.info(
                 "School created successfully",
@@ -110,10 +112,11 @@ class SchoolService:
             address=address,
         )
         try:
-            return await self.school_repository.register_school(
-                school=school,
-                user=current_user,
-            )
+            async with transactional(self.school_repository.db):
+                return await self.school_repository.register_school(
+                    school=school,
+                    user=current_user,
+                )
         except Exception:
 
             logger.exception(
@@ -131,7 +134,7 @@ class SchoolService:
         Fetch school by ID.
         """
 
-        return await self.repository.get_by_id(school_id)
+        return await self.school_repository.get_by_id(school_id)
 
     async def get_all_schools(
         self,
@@ -140,7 +143,7 @@ class SchoolService:
         Fetch all schools.
         """
 
-        return await self.repository.get_all()
+        return await self.school_repository.get_all()
 
     async def update_school(
         self,
@@ -152,7 +155,7 @@ class SchoolService:
         Update school.
         """
 
-        school = await self.repository.get_by_id(school_id)
+        school = await self.school_repository.get_by_id(school_id)
 
         if school is None:
             logger.warning(
@@ -169,7 +172,8 @@ class SchoolService:
             school_id=school.id,
         )
 
-        return await self.repository.update(school)
+        async with transactional(self.school_repository.db):
+            return await self.school_repository.update(school)
 
     async def delete_school(
         self,
@@ -184,4 +188,5 @@ class SchoolService:
             school_id=school.id,
         )
 
-        await self.repository.delete(school)
+        async with transactional(self.school_repository.db):
+            await self.school_repository.delete(school)

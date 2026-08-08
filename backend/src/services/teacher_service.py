@@ -13,6 +13,7 @@ A Teacher is simply:
 import uuid
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.enums.role import RoleName
 from src.models.teacher_class import TeacherClass
 from src.models.user import User
@@ -78,36 +79,38 @@ class TeacherService:
         )
         if current_user.school_id is None:
             raise ValueError("Admin does not belong to a school.")
-        teacher = await self.user_service.register_user(
-            username=request.username,
-            email=request.email,
-            password=request.password,
-        )
 
-        teacher.school_id = current_user.school_id
+        async with transactional(self.user_repository.db):
+            teacher = await self.user_service.register_user(
+                username=request.username,
+                email=request.email,
+                password=request.password,
+            )
 
-        await self.user_repository.update(
-            teacher,
-        )
+            teacher.school_id = current_user.school_id
 
-        teacher_role = await self.role_repository.get_by_name(
-            RoleName.TEACHER,
-        )
+            await self.user_repository.update(
+                teacher,
+            )
 
-        if teacher_role is None:
-            raise ValueError("Teacher role does not exist.")
+            teacher_role = await self.role_repository.get_by_name(
+                RoleName.TEACHER,
+            )
 
-        await self.role_repository.assign_role(
-            user=teacher,
-            role=teacher_role,
-        )
+            if teacher_role is None:
+                raise ValueError("Teacher role does not exist.")
 
-        logger.info(
-            "Teacher invited successfully",
-            teacher_id=teacher.id,
-        )
+            await self.role_repository.assign_role(
+                user=teacher,
+                role=teacher_role,
+            )
 
-        return teacher
+            logger.info(
+                "Teacher invited successfully",
+                teacher_id=teacher.id,
+            )
+
+            return teacher
 
     async def get_teachers(
         self,
@@ -177,6 +180,7 @@ class TeacherService:
             class_id=school_class.id,
         )
 
-        return await self.teacher_class_repository.create(
-            mapping,
-        )
+        async with transactional(self.teacher_class_repository.db):
+            return await self.teacher_class_repository.create(
+                mapping,
+            )
