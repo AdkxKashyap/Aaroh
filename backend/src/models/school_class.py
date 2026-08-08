@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class SchoolClass(BaseModel):
-    __tablename__ = ("school_classes",)
+    __tablename__ = "school_classes"
     __table_args__ = (
         UniqueConstraint(
             "school_id",

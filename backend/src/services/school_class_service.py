@@ -11,7 +11,7 @@ import structlog
 from src.models.school_class import SchoolClass
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
-
+from src.models.user import User
 logger = structlog.get_logger(__name__)
 
 
@@ -27,28 +27,31 @@ class SchoolClassService:
 
     async def create_class(
         self,
-        school_id: uuid.UUID,
+        current_user: User,
         name: str,
     ) -> SchoolClass:
         """
         Create a class under a school.
         """
 
-        school = await self.school_repository.get_by_id(school_id)
+        school = await self.school_repository.get_by_id(current_user.school_id)
 
         if school is None:
             raise ValueError("School not found.")
-        class_existing = await self.class_repository.get_by_name(name, school_id)
+        class_existing = await self.class_repository.get_by_name(
+            current_user.school_id,
+            name,
+        )
         if class_existing:
             raise ValueError("Class already exists.")
         logger.info(
             "Creating class",
-            school_id=school_id,
+            school_id=current_user.school_id,
             class_name=name,
         )
 
         school_class = SchoolClass(
-            school_id=school_id,
+            school_id=current_user.school_id,
             name=name,
         )
 
