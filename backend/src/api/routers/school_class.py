@@ -1,8 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import UUID
 from src.core.auth import get_current_user, require_role
+from src.core.logger import logger
 from src.dependencies.services import get_school_class_service
 from src.enums.role import RoleName
 from src.models.user import User
@@ -59,12 +59,20 @@ async def get_classes(
         Depends(get_school_class_service),
     ],
 ):
+    logger.info(
+        "Fetching classes for school",
+        school_id=current_user.school_id,
+    )
     return await service.get_classes(
         current_user.school_id,
     )
 
 
-@router.get("/{teacher_id}",dependencies=[Depends(require_role(RoleName.ADMIN, RoleName.TEACHER))], response_model=list[SchoolClassResponse])
+@router.get(
+    "/{teacher_id}",
+    dependencies=[Depends(require_role(RoleName.ADMIN, RoleName.TEACHER))],
+    response_model=list[SchoolClassResponse],
+)
 async def get_classes_by_teacher(
     teacher_id: uuid.UUID,
     service: Annotated[

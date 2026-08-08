@@ -12,7 +12,7 @@ A Teacher is simply:
 
 import uuid
 
-import structlog
+from src.core.logger import logger
 from src.enums.role import RoleName
 from src.models.teacher_class import TeacherClass
 from src.models.user import User
@@ -22,8 +22,6 @@ from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.schemas.teacher import InviteTeacherRequest
 from src.services.user_service import UserService
-
-logger = structlog.get_logger(__name__)
 
 # =============================================================================
 # TODO (Post MVP)
@@ -119,7 +117,10 @@ class TeacherService:
         Returns all teachers
         belonging to the admin's school.
         """
-
+        logger.info(
+            "Fetching teachers for school",
+            school_id=current_user.school_id,
+        )
         users = await self.user_repository.get_by_school(
             current_user.school_id,
         )

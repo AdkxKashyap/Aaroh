@@ -10,15 +10,13 @@ Used By:
 
 import uuid
 
-import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.logger import logger
 from src.models.role import Role
 from src.models.user import User
 from src.models.user_role import UserRole
-
-logger = structlog.get_logger(__name__)
 
 
 class RoleRepository:

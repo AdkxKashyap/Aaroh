@@ -31,10 +31,12 @@ def configure_logging() -> None:
             structlog.contextvars.merge_contextvars,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.add_log_level,
-            structlog.processors.JSONRenderer(),
+            structlog.dev.ConsoleRenderer(colors=True),
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
 
 
+# Export a module-level logger for convenience. Callers should invoke
+# `configure_logging()` once at application startup (see `src.main`).
 logger = structlog.get_logger()

@@ -7,13 +7,11 @@ Responsibility:
 
 import uuid
 
-import structlog
+from src.core.logger import logger
 from src.models.role import Role
 from src.models.user_role import UserRole
 from src.repositories.role_repository import RoleRepository
 from src.repositories.user_repository import UserRepository
-
-logger = structlog.get_logger(__name__)
 
 
 class RoleService:

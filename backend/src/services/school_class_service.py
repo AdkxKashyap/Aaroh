@@ -7,12 +7,11 @@ Responsibility:
 
 import uuid
 
-import structlog
+from src.core.logger import logger
 from src.models.school_class import SchoolClass
+from src.models.user import User
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
-from src.models.user import User
-logger = structlog.get_logger(__name__)
 
 
 class SchoolClassService:

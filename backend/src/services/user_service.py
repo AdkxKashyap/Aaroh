@@ -10,12 +10,10 @@ Used By:
 
 from uuid import UUID
 
-import structlog
+from src.core.logger import logger
 from src.core.security import hash_password
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
-
-logger = structlog.get_logger(__name__)
 
 
 class UserService:

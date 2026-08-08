@@ -10,13 +10,11 @@ Used By:
 
 import uuid
 
-import structlog
+from src.core.logger import logger
 from src.models.school import School
 from src.models.user import User
 from src.repositories.school_repository import SchoolRepository
 from src.repositories.user_repository import UserRepository
-
-logger = structlog.get_logger(__name__)
 
 
 class SchoolService:

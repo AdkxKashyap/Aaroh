@@ -6,6 +6,13 @@ Responsibility:
 """
 
 from fastapi import FastAPI
+
+# Configure logging as early as possible so any modules imported below that
+# reference `logger` get a configured logger instance.
+from src.core.logger import configure_logging
+
+configure_logging()
+
 from src.api.routers.auth import router as auth_router
 from src.api.routers.health import router as health_router
 from src.api.routers.role import router as role_router
@@ -14,10 +21,7 @@ from src.api.routers.school_class import router as class_router
 from src.api.routers.teacher import router as teacher_router
 from src.api.routers.user import router as user_router
 from src.config.settings import get_settings
-from src.core.logger import configure_logging
 from src.middleware.logging import LoggingMiddleware
-
-configure_logging()
 
 settings = get_settings()
 

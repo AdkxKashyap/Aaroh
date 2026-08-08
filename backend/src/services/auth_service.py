@@ -5,12 +5,10 @@ Responsibility:
     Handles user authentication.
 """
 
-import structlog
+from src.core.logger import logger
 
 from src.core.security import create_access_token, verify_password
 from src.repositories.user_repository import UserRepository
-
-logger = structlog.get_logger(__name__)
 
 
 class AuthService:

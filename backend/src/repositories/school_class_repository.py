@@ -10,15 +10,12 @@ Used By:
 
 import uuid
 
-import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.models.teacher_class import TeacherClass
-from src.models.teacher_class import TeacherClass
+from src.core.logger import logger
 from src.models.school_class import SchoolClass
-
-logger = structlog.get_logger(__name__)
+from src.models.teacher_class import TeacherClass
 
 
 class SchoolClassRepository:
@@ -119,6 +116,7 @@ class SchoolClassRepository:
                 class_name=name,
             )
             raise
+
     async def get_by_teacher(
         self,
         teacher_id: uuid.UUID,
@@ -142,6 +140,7 @@ class SchoolClassRepository:
                 teacher_id=teacher_id,
             )
             raise
+
     async def update(
         self,
         school_class: SchoolClass,
@@ -167,9 +166,9 @@ class SchoolClassRepository:
             raise
 
     async def delete(
-    self,
-    school_class: SchoolClass,
-):
+        self,
+        school_class: SchoolClass,
+    ):
         """
         Delete class.
         """

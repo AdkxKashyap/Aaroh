@@ -7,13 +7,11 @@ Responsibility:
 
 import uuid
 
-import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.logger import logger
 from src.models.teacher_class import TeacherClass
-
-logger = structlog.get_logger(__name__)
 
 
 class TeacherClassRepository:

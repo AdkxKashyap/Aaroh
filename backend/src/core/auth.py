@@ -10,6 +10,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from src.core.logger import logger
 from src.core.security import decode_access_token
 from src.dependencies.services import get_user_service
 from src.models.user import User
@@ -17,9 +18,6 @@ from src.services.user_service import UserService
 from typing_extensions import Annotated
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-import structlog
-
-logger = structlog.get_logger(__name__)
 
 
 async def get_current_user(

@@ -10,14 +10,12 @@ Used By:
 
 import uuid
 
-import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.core.logger import logger
 from src.models.school import School
 from src.models.user import User
-
-logger = structlog.get_logger(__name__)
 
 
 class SchoolRepository:
@@ -47,10 +45,11 @@ class SchoolRepository:
                 school_name=school.name,
             )
             raise
-# TODO:
-# This method manages a cross-aggregate transaction.
-# As we migrate to service-managed transactions (Unit of Work),
-# move transaction ownership to the service layer and remove this method.
+
+    # TODO:
+    # This method manages a cross-aggregate transaction.
+    # As we migrate to service-managed transactions (Unit of Work),
+    # move transaction ownership to the service layer and remove this method.
     async def register_school(
         self,
         school: School,
