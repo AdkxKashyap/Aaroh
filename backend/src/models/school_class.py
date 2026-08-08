@@ -26,13 +26,13 @@ if TYPE_CHECKING:
 
 class SchoolClass(BaseModel):
     __tablename__ = ("school_classes",)
-    # __table_args__ = (
-    #     UniqueConstraint(
-    #         "school_id",
-    #         "name",
-    #         name="uq_school_class_name",
-    #     ),
-    # )
+    __table_args__ = (
+        UniqueConstraint(
+            "school_id",
+            "name",
+            name="uq_school_class_name",
+        ),
+    )
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,

@@ -38,9 +38,9 @@ class SchoolClassService:
 
         if school is None:
             raise ValueError("School not found.")
-        # class_existing = await self.class_repository.get_by_name(name, school_id)
-        # if class_existing:
-        #     raise ValueError("Class already exists.")
+        class_existing = await self.class_repository.get_by_name(name, school_id)
+        if class_existing:
+            raise ValueError("Class already exists.")
         logger.info(
             "Creating class",
             school_id=school_id,
