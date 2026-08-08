@@ -27,13 +27,11 @@ class TeacherClass(BaseModel):
     )
 
     teacher_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        ondelete="CASCADE",
     )
 
     class_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("school_classes.id"),
+        ForeignKey("school_classes.id", ondelete="CASCADE"),
         nullable=False,
-        ondelete="CASCADE",
     )

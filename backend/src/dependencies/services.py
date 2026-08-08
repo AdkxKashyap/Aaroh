@@ -19,12 +19,15 @@ from src.dependencies.database import DbSession
 from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
+from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.auth_service import AuthService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
 from src.services.user_service import UserService
+
+from src.services.teacher_service import TeacherService
 
 
 def get_user_repository(
@@ -124,4 +127,39 @@ def get_school_class_service(
     return SchoolClassService(
         class_repository=class_repository,
         school_repository=school_repository,
+    )
+
+
+def get_teacher_class_repository(
+    db: DbSession,
+) -> TeacherClassRepository:
+    """
+    Creates TeacherClassRepository.
+    """
+
+    return TeacherClassRepository(db)
+
+
+def get_teacher_service(
+    teacher_class_repository: Annotated[
+        TeacherClassRepository,
+        Depends(get_teacher_class_repository),
+    ],
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
+    user_repository: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
+    ],
+) -> TeacherService:
+    """
+    Creates TeacherService.
+    """
+
+    return TeacherService(
+        teacher_class_repository=teacher_class_repository,
+        class_repository=class_repository,
+        user_repository=user_repository,
     )
