@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
+from src.enums.assignment import AssignmentStatus
 
 
 class CreateAssignmentRequest(BaseModel):
@@ -25,7 +26,7 @@ class AssignmentResponse(BaseModel):
     due_date: datetime
     teacher_id: uuid.UUID
     class_id: uuid.UUID
-
+    status: AssignmentStatus
     model_config = ConfigDict(
         from_attributes=True,
     )

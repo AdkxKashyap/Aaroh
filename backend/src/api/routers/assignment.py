@@ -93,3 +93,143 @@ async def get_assignments(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(ex),
         )
+
+
+@router.post(
+    "/{assignment_id}/submit-review",
+    response_model=AssignmentResponse,
+)
+async def submit_assignment_for_review(
+    assignment_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.TEACHER)),
+    ],
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+):
+    try:
+        return await assignment_service.submit_for_review(
+            current_user=current_user,
+            assignment_id=assignment_id,
+        )
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
+
+
+@router.post(
+    "/{assignment_id}/approve",
+    response_model=AssignmentResponse,
+)
+async def approve_assignment(
+    assignment_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.TEACHER)),
+    ],
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+):
+    try:
+        return await assignment_service.approve(
+            current_user=current_user,
+            assignment_id=assignment_id,
+        )
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
+
+
+@router.post(
+    "/{assignment_id}/activate",
+    response_model=AssignmentResponse,
+)
+async def activate_assignment(
+    assignment_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.TEACHER)),
+    ],
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+):
+    try:
+        return await assignment_service.activate(
+            current_user=current_user,
+            assignment_id=assignment_id,
+        )
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
+
+
+@router.post(
+    "/{assignment_id}/complete",
+    response_model=AssignmentResponse,
+)
+async def complete_assignment(
+    assignment_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.TEACHER)),
+    ],
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+):
+    try:
+        return await assignment_service.complete(
+            current_user=current_user,
+            assignment_id=assignment_id,
+        )
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
+
+
+@router.post(
+    "/{assignment_id}/cancel",
+    response_model=AssignmentResponse,
+)
+async def cancel_assignment(
+    assignment_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.TEACHER)),
+    ],
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+):
+    try:
+        return await assignment_service.cancel(
+            current_user=current_user,
+            assignment_id=assignment_id,
+        )
+
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
