@@ -15,18 +15,20 @@ Responsibility:
 from typing import Annotated
 
 from fastapi import Depends
-from src.services.assignment_service import AssignmentService
-from src.repositories.assignment_repository import AssignmentRepository
 from src.dependencies.database import DbSession
+from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
+from src.repositories.student_repository import StudentRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
+from src.services.assignment_service import AssignmentService
 from src.services.auth_service import AuthService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
+from src.services.student_service import StudentService
 from src.services.teacher_service import TeacherService
 from src.services.user_service import UserService
 
@@ -175,6 +177,7 @@ def get_teacher_service(
         teacher_class_repository=teacher_class_repository,
     )
 
+
 def get_assignment_repository(
     db: DbSession,
 ) -> AssignmentRepository:
@@ -183,6 +186,8 @@ def get_assignment_repository(
     """
 
     return AssignmentRepository(db)
+
+
 def get_assignment_service(
     assignment_repository: Annotated[
         AssignmentRepository,
@@ -202,4 +207,41 @@ def get_assignment_service(
         assignment_repository=assignment_repository,
         class_repository=class_repository,
         teacher_class_repository=teacher_class_repository,
+    )
+
+
+def get_student_repository(
+    db: DbSession,
+) -> StudentRepository:
+    return StudentRepository(db)
+
+
+def get_student_service(
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service),
+    ],
+    user_repository: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
+    ],
+    student_repository: Annotated[
+        StudentRepository,
+        Depends(get_student_repository),
+    ],
+    role_repository: Annotated[
+        RoleRepository,
+        Depends(get_role_repository),
+    ],
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
+) -> StudentService:
+    return StudentService(
+        user_service=user_service,
+        user_repository=user_repository,
+        student_repository=student_repository,
+        role_repository=role_repository,
+        class_repository=class_repository,
     )
