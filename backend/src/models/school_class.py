@@ -16,7 +16,7 @@ Relationships:
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.models.base import BaseModel
 
@@ -25,8 +25,14 @@ if TYPE_CHECKING:
 
 
 class SchoolClass(BaseModel):
-    __tablename__ = "school_classes"
-
+    __tablename__ = ("school_classes",)
+    # __table_args__ = (
+    #     UniqueConstraint(
+    #         "school_id",
+    #         "name",
+    #         name="uq_school_class_name",
+    #     ),
+    # )
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,

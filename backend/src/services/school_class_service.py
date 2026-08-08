@@ -38,7 +38,9 @@ class SchoolClassService:
 
         if school is None:
             raise ValueError("School not found.")
-
+        # class_existing = await self.class_repository.get_by_name(name, school_id)
+        # if class_existing:
+        #     raise ValueError("Class already exists.")
         logger.info(
             "Creating class",
             school_id=school_id,
@@ -61,3 +63,47 @@ class SchoolClassService:
         """
 
         return await self.class_repository.get_by_school(school_id)
+
+    async def update_class(
+        self,
+        class_id: uuid.UUID,
+        name: str,
+    ) -> SchoolClass:
+        """
+        Update a class's name.
+        """
+
+        school_class = await self.class_repository.get_by_id(class_id)
+
+        if school_class is None:
+            raise ValueError("Class not found.")
+
+        logger.info(
+            "Updating class",
+            class_id=class_id,
+            new_name=name,
+        )
+
+        school_class.name = name
+
+        return await self.class_repository.update(school_class)
+
+    async def delete_class(
+        self,
+        class_id: uuid.UUID,
+    ) -> None:
+        """
+        Delete a class.
+        """
+
+        school_class = await self.class_repository.get_by_id(class_id)
+
+        if school_class is None:
+            raise ValueError("Class not found.")
+
+        logger.info(
+            "Deleting class",
+            class_id=class_id,
+        )
+
+        await self.class_repository.delete(school_class)

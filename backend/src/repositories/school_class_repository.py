@@ -90,3 +90,79 @@ class SchoolClassRepository:
                 school_id=school_id,
             )
             raise
+
+    async def get_by_name(
+        self,
+        school_id: uuid.UUID,
+        name: str,
+    ) -> SchoolClass | None:
+        """
+        Fetch class by name within a school.
+        """
+
+        try:
+            result = await self.db.execute(
+                select(SchoolClass).where(
+                    SchoolClass.school_id == school_id,
+                    SchoolClass.name == name,
+                )
+            )
+
+            return result.scalar_one_or_none()
+
+        except SQLAlchemyError:
+            logger.exception(
+                "Failed to fetch class",
+                school_id=school_id,
+                class_name=name,
+            )
+            raise
+
+    async def update(
+        self,
+        school_class: SchoolClass,
+    ) -> SchoolClass:
+        """
+        Update class.
+        """
+
+        try:
+
+            await self.db.commit()
+            await self.db.refresh(school_class)
+
+            return school_class
+
+        except SQLAlchemyError:
+
+            logger.exception(
+                "Failed to update class",
+                class_id=school_class.id,
+            )
+
+            raise
+
+    async def delete(
+    self,
+    school_class: SchoolClass,
+):
+        """
+        Delete class.
+        """
+
+        try:
+
+            await self.db.delete(
+                school_class,
+            )
+
+            await self.db.commit()
+
+        except SQLAlchemyError:
+
+            logger.exception(
+                "Failed to delete class",
+                class_id=school_class.id,
+            )
+
+            raise
