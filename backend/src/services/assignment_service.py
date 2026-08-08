@@ -2,11 +2,41 @@ import uuid
 from datetime import datetime, timezone
 
 from src.core.logger import logger
+from src.enums.assignment import AssignmentStatus
 from src.models.assignment import Assignment
 from src.models.user import User
 from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
+
+"""
+Assignment Service
+
+Responsibility:
+    Handles assignment management.
+"""
+
+"""
+This dictionary defines the allowed state transitions for assignments.
+The keys are the current states, and the values are sets of states to which the assignment can transition. This is used to enforce the assignment state machine.
+"""
+ALLOWED_ASSIGNMENT_TRANSITIONS = {
+    AssignmentStatus.DRAFT: {
+        AssignmentStatus.REVIEW_REQUIRED,
+    },
+    AssignmentStatus.REVIEW_REQUIRED: {
+        AssignmentStatus.APPROVED,
+    },
+    AssignmentStatus.APPROVED: {
+        AssignmentStatus.ACTIVE,
+    },
+    AssignmentStatus.ACTIVE: {
+        AssignmentStatus.COMPLETED,
+        AssignmentStatus.CANCELLED,
+    },
+    AssignmentStatus.COMPLETED: set(),
+    AssignmentStatus.CANCELLED: set(),
+}
 
 
 class AssignmentService:
@@ -112,4 +142,132 @@ class AssignmentService:
 
         return await self.assignment_repository.get_by_class(
             class_id,
+        )
+
+    async def transition_status(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+        new_status: AssignmentStatus,
+    ) -> Assignment:
+        """
+        Transition an assignment to a valid next state.
+        """
+
+        logger.info(
+            "Transitioning assignment",
+            assignment_id=assignment_id,
+            user_id=current_user.id,
+            target_status=new_status,
+        )
+
+        assignment = await self.assignment_repository.get_by_id(
+            assignment_id,
+        )
+
+        if assignment is None:
+            raise ValueError("Assignment not found.")
+
+        # Assignment ownership
+        if assignment.teacher_id != current_user.id:
+            raise ValueError("You do not own this assignment.")
+
+        allowed_states = ALLOWED_ASSIGNMENT_TRANSITIONS[assignment.status]
+
+        if new_status not in allowed_states:
+            logger.warning(
+                "Invalid assignment state transition",
+                assignment_id=assignment.id,
+                current_status=assignment.status,
+                target_status=new_status,
+            )
+
+            raise ValueError(
+                f"Invalid transition from " f"{assignment.status} to {new_status}."
+            )
+
+        old_status = assignment.status
+        assignment.status = new_status
+
+        try:
+            assignment = await self.assignment_repository.update(
+                assignment,
+            )
+
+            logger.info(
+                "Assignment status transitioned",
+                assignment_id=assignment.id,
+                old_status=old_status,
+                new_status=new_status,
+            )
+
+            return assignment
+
+        except Exception:
+            logger.exception(
+                "Failed to transition assignment",
+                assignment_id=assignment.id,
+                old_status=old_status,
+                new_status=new_status,
+            )
+            raise
+
+    async def submit_for_review(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> Assignment:
+
+        return await self.transition_status(
+            current_user=current_user,
+            assignment_id=assignment_id,
+            new_status=AssignmentStatus.REVIEW_REQUIRED,
+        )
+
+    async def approve(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> Assignment:
+
+        return await self.transition_status(
+            current_user=current_user,
+            assignment_id=assignment_id,
+            new_status=AssignmentStatus.APPROVED,
+        )
+
+    async def activate(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> Assignment:
+
+        return await self.transition_status(
+            current_user=current_user,
+            assignment_id=assignment_id,
+            new_status=AssignmentStatus.ACTIVE,
+        )
+
+    async def complete(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> Assignment:
+
+        return await self.transition_status(
+            current_user=current_user,
+            assignment_id=assignment_id,
+            new_status=AssignmentStatus.COMPLETED,
+        )
+
+    async def cancel(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> Assignment:
+
+        return await self.transition_status(
+            current_user=current_user,
+            assignment_id=assignment_id,
+            new_status=AssignmentStatus.CANCELLED,
         )
