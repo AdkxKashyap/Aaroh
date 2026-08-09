@@ -21,6 +21,7 @@ from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
 from src.repositories.student_repository import StudentRepository
+from src.repositories.submission_repository import SubmissionRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.assignment_service import AssignmentService
@@ -245,3 +246,9 @@ def get_student_service(
         role_repository=role_repository,
         class_repository=class_repository,
     )
+
+
+def get_submission_repository(
+    db: DbSession,
+) -> SubmissionRepository:
+    return SubmissionRepository(db)
