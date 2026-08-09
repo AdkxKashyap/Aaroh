@@ -35,13 +35,15 @@ class StudentRepository:
             await self.db.flush()
             await self.db.refresh(student)
 
+            loaded_student = await self.get_by_id(student.id)
+
             logger.info(
                 "Student created",
-                student_id=student.id,
+                student_id=loaded_student.id if loaded_student else student.id,
                 user_id=student.user_id,
             )
 
-            return student
+            return loaded_student or student
 
         except SQLAlchemyError:
             logger.exception(

@@ -30,10 +30,9 @@ from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
 from src.services.student_service import StudentService
+from src.services.submission_service import SubmissionService
 from src.services.teacher_service import TeacherService
 from src.services.user_service import UserService
-
-from backend.src.services.submission_service import SubmissionService
 
 
 def get_user_repository(
