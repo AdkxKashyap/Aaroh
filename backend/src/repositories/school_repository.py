@@ -34,7 +34,7 @@ class SchoolRepository:
         try:
             self.db.add(school)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(school)
 
             return school
@@ -66,15 +66,11 @@ class SchoolRepository:
 
             user.school_id = school.id
 
-            await self.db.commit()
-
             await self.db.refresh(school)
 
             return school
 
         except SQLAlchemyError:
-            await self.db.rollback()
-
             logger.exception(
                 "Failed to register school",
                 school_name=school.name,
@@ -149,7 +145,7 @@ class SchoolRepository:
         """
 
         try:
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(school)
 
             return school
@@ -171,7 +167,6 @@ class SchoolRepository:
 
         try:
             await self.db.delete(school)
-            await self.db.commit()
 
         except SQLAlchemyError:
             logger.exception(

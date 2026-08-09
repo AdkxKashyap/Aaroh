@@ -12,6 +12,7 @@ from uuid import UUID
 
 from src.core.logger import logger
 from src.core.security import hash_password
+from src.db.transaction import transactional
 from src.models.user import User
 from src.repositories.user_repository import UserRepository
 
@@ -27,18 +28,19 @@ class UserService:
         email: str,
         password: str,
     ) -> User:
-        existing_user = await self.repository.get_by_username(username)
+        async with transactional(self.repository.db):
+            existing_user = await self.repository.get_by_username(username)
 
-        if existing_user:
-            raise ValueError("Username already exists.")
+            if existing_user:
+                raise ValueError("Username already exists.")
 
-        user = User(
-            username=username,
-            email=email,
-            password_hash=hash_password(password),
-        )
+            user = User(
+                username=username,
+                email=email,
+                password_hash=hash_password(password),
+            )
 
-        return await self.repository.create(user)
+            return await self.repository.create(user)
 
     async def get_user(self, user_id: UUID) -> User | None:
         """
@@ -63,25 +65,25 @@ class UserService:
         return await self.repository.get_all()
 
     async def delete_user(self, user: User) -> None:
-        await self.repository.delete(user)
+        async with transactional(self.repository.db):
+            await self.repository.delete(user)
 
+    async def update_user(
+        self,
+        user_id: UUID,
+        email: str,
+        is_active: bool,
+    ) -> User | None:
+        async with transactional(self.repository.db):
+            user = await self.repository.get_by_id(user_id)
 
-async def update_user(
-    self,
-    user_id: UUID,
-    email: str,
-    is_active: bool,
-) -> User | None:
+            if user is None:
+                logger.warning("User not found", user_id=user_id)
+                return None
 
-    user = await self.repository.get_by_id(user_id)
+            user.email = email
+            user.is_active = is_active
 
-    if user is None:
-        logger.warning("User not found", user_id=user_id)
-        return None
+            logger.info("Updating user", user_id=user.id)
 
-    user.email = email
-    user.is_active = is_active
-
-    logger.info("Updating user", user_id=user.id)
-
-    return await self.repository.update(user)
+            return await self.repository.update(user)

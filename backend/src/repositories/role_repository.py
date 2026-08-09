@@ -31,7 +31,7 @@ class RoleRepository:
         try:
             self.db.add(role)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(role)
 
             return role
@@ -141,7 +141,7 @@ class RoleRepository:
 
             self.db.add(user_role)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(user_role)
 
             return user_role

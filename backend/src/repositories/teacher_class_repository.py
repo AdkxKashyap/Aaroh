@@ -27,7 +27,7 @@ class TeacherClassRepository:
         try:
             self.db.add(mapping)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(mapping)
 
             return mapping

@@ -32,7 +32,7 @@ class UserRepository:
         Create a new user.
         """
         self.db.add(user)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(user)
         return user
 
@@ -69,13 +69,12 @@ class UserRepository:
         Delete a user.
         """
         await self.db.delete(user)
-        await self.db.commit()
 
     async def update(self, user: User) -> User:
         """
         Update an existing user.
         """
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(user)
         return user
 

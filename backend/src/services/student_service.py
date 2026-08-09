@@ -8,6 +8,7 @@ Responsibility:
 import uuid
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.enums.role import RoleName
 from src.models.student import Student
 from src.models.user import User
@@ -78,49 +79,50 @@ class StudentService:
             raise ValueError("Email already exists.")
 
         try:
-            student_user = await self.user_service.register_user(
-                username=username,
-                email=email,
-                password=password,
-            )
+            async with transactional(self.user_repository.db):
+                student_user = await self.user_service.register_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                )
 
-            student_user.school_id = current_user.school_id
+                student_user.school_id = current_user.school_id
 
-            await self.user_repository.update(
-                student_user,
-            )
+                await self.user_repository.update(
+                    student_user,
+                )
 
-            student_role = await self.role_repository.get_by_name(
-                RoleName.STUDENT,
-            )
+                student_role = await self.role_repository.get_by_name(
+                    RoleName.STUDENT,
+                )
 
-            if student_role is None:
-                raise ValueError("Student role not found.")
+                if student_role is None:
+                    raise ValueError("Student role not found.")
 
-            await self.role_repository.assign_role(
-                student_user,
-                student_role,
-            )
+                await self.role_repository.assign_role(
+                    student_user,
+                    student_role,
+                )
 
-            student = Student(
-                user_id=student_user.id,
-                school_id=current_user.school_id,
-                class_id=class_id,
-            )
+                student = Student(
+                    user_id=student_user.id,
+                    school_id=current_user.school_id,
+                    class_id=class_id,
+                )
 
-            student = await self.student_repository.create(
-                student,
-            )
+                student = await self.student_repository.create(
+                    student,
+                )
 
-            logger.info(
-                "Student created successfully",
-                student_id=student.id,
-                user_id=student_user.id,
-                school_id=current_user.school_id,
-                class_id=class_id,
-            )
+                logger.info(
+                    "Student created successfully",
+                    student_id=student.id,
+                    user_id=student_user.id,
+                    school_id=current_user.school_id,
+                    class_id=class_id,
+                )
 
-            return student
+                return student
 
         except Exception:
             logger.exception(

@@ -8,6 +8,7 @@ Responsibility:
 import uuid
 
 from src.core.logger import logger
+from src.db.transaction import transactional
 from src.models.role import Role
 from src.models.user_role import UserRole
 from src.repositories.role_repository import RoleRepository
@@ -48,7 +49,8 @@ class RoleService:
             description=description,
         )
 
-        role = await self.role_repository.create(role)
+        async with transactional(self.role_repository.db):
+            role = await self.role_repository.create(role)
 
         logger.info(
             "Role created successfully",
@@ -107,7 +109,9 @@ class RoleService:
             )
 
             raise ValueError("Role already assigned.")
-        return await self.role_repository.assign_role(
-            user,
-            role,
-        )
+
+        async with transactional(self.role_repository.db):
+            return await self.role_repository.assign_role(
+                user,
+                role,
+            )
