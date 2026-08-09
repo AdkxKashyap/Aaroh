@@ -33,6 +33,8 @@ from src.services.student_service import StudentService
 from src.services.teacher_service import TeacherService
 from src.services.user_service import UserService
 
+from backend.src.services.submission_service import SubmissionService
+
 
 def get_user_repository(
     db: DbSession,
@@ -252,3 +254,27 @@ def get_submission_repository(
     db: DbSession,
 ) -> SubmissionRepository:
     return SubmissionRepository(db)
+
+
+def get_submission_service(
+    db: DbSession,
+    submission_repository: Annotated[
+        SubmissionRepository,
+        Depends(get_submission_repository),
+    ],
+    student_repository: Annotated[
+        StudentRepository,
+        Depends(get_student_repository),
+    ],
+    assignment_repository: Annotated[
+        AssignmentRepository,
+        Depends(get_assignment_repository),
+    ],
+) -> SubmissionService:
+
+    return SubmissionService(
+        submission_repository=submission_repository,
+        student_repository=student_repository,
+        assignment_repository=assignment_repository,
+        db=db,
+    )
