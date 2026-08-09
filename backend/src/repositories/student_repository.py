@@ -59,6 +59,8 @@ class StudentRepository:
                 select(Student)
                 .options(
                     selectinload(Student.user),
+                    selectinload(Student.school_class),
+                    selectinload(Student.school),
                 )
                 .where(Student.id == student_id)
             )
@@ -81,6 +83,8 @@ class StudentRepository:
                 select(Student)
                 .options(
                     selectinload(Student.user),
+                    selectinload(Student.school_class),
+                    selectinload(Student.school),
                 )
                 .where(Student.user_id == user_id)
             )
@@ -103,6 +107,8 @@ class StudentRepository:
                 select(Student)
                 .options(
                     selectinload(Student.user),
+                    selectinload(Student.school_class),
+                    selectinload(Student.school),
                 )
                 .where(Student.class_id == class_id)
             )

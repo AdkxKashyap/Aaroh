@@ -16,10 +16,22 @@ from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.student_repository import StudentRepository
 from src.repositories.user_repository import UserRepository
+from src.schemas.student import StudentResponse
 from src.services.user_service import UserService
 
 
 class StudentService:
+
+    def _to_response(self, student: Student) -> StudentResponse:
+        return StudentResponse(
+            id=student.id,
+            user_id=student.user_id,
+            school_id=student.school_id,
+            class_id=student.class_id,
+            username=student.user.username if student.user else None,
+            class_name=student.school_class.name if student.school_class else None,
+            school_name=student.school.name if student.school else None,
+        )
 
     def __init__(
         self,
@@ -42,7 +54,7 @@ class StudentService:
         email: str,
         password: str,
         class_id: uuid.UUID,
-    ) -> Student:
+    ) -> StudentResponse:
         """
         Creates a student in the current admin's school.
         """
@@ -122,7 +134,7 @@ class StudentService:
                     class_id=class_id,
                 )
 
-                return student
+                return self._to_response(student)
 
         except Exception:
             logger.exception(
@@ -136,7 +148,7 @@ class StudentService:
         self,
         current_user: User,
         class_id: uuid.UUID,
-    ) -> list[Student]:
+    ) -> list[StudentResponse]:
         """
         Returns students belonging to a class
         in the current user's school.
@@ -158,14 +170,16 @@ class StudentService:
         if school_class.school_id != current_user.school_id:
             raise ValueError("Class does not belong to your school.")
 
-        return await self.student_repository.get_by_class(
+        students = await self.student_repository.get_by_class(
             class_id,
         )
+
+        return [self._to_response(student) for student in students]
 
     async def get_by_user_id(
         self,
         user_id: uuid.UUID,
-    ) -> Student | None:
+    ) -> StudentResponse | None:
         """
         Get student profile by authenticated user id.
         """
@@ -175,6 +189,11 @@ class StudentService:
             user_id=user_id,
         )
 
-        return await self.student_repository.get_by_user_id(
+        student = await self.student_repository.get_by_user_id(
             user_id,
         )
+
+        if student is None:
+            return None
+
+        return self._to_response(student)

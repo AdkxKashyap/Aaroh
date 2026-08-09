@@ -22,6 +22,9 @@ class StudentResponse(BaseModel):
     user_id: uuid.UUID
     school_id: uuid.UUID
     class_id: uuid.UUID
+    username: str | None = None
+    class_name: str | None = None
+    school_name: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
