@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.core.logger import logger
 from src.models.submission import Submission
 
@@ -55,7 +56,9 @@ class SubmissionRepository:
     ) -> Submission | None:
         try:
             result = await self.db.execute(
-                select(Submission).where(Submission.id == submission_id)
+                select(Submission)
+                .options(selectinload(Submission.assignment))
+                .where(Submission.id == submission_id)
             )
 
             return result.scalar_one_or_none()
@@ -111,3 +114,14 @@ class SubmissionRepository:
                 submission_id=submission.id,
             )
             raise
+
+    async def get_by_assignment(
+        self,
+        assignment_id: uuid.UUID,
+    ) -> list[Submission]:
+
+        result = await self.db.execute(
+            select(Submission).where(Submission.assignment_id == assignment_id)
+        )
+
+        return list(result.scalars().all())

@@ -108,3 +108,83 @@ class SubmissionService:
             )
 
             return submission
+
+    async def get_assignment_submissions(
+        self,
+        current_user: User,
+        assignment_id: uuid.UUID,
+    ) -> list[Submission]:
+        """
+        Get all submissions for an assignment.
+        """
+
+        logger.info(
+            "Fetching assignment submissions",
+            user_id=current_user.id,
+            assignment_id=assignment_id,
+        )
+
+        assignment = await self.assignment_repository.get_by_id(
+            assignment_id,
+        )
+
+        if assignment is None:
+            raise ValueError("Assignment not found.")
+
+        if assignment.teacher_id != current_user.id:
+            raise ValueError("You are not the teacher for this assignment.")
+
+        submissions = await self.submission_repository.get_by_assignment(
+            assignment_id,
+        )
+
+        return submissions
+
+    async def review_submission(
+        self,
+        current_user: User,
+        submission_id: uuid.UUID,
+        feedback: str,
+    ) -> Submission:
+        """
+        Review a submission for an assignment.
+        """
+
+        logger.info(
+            "Reviewing submission",
+            user_id=current_user.id,
+            submission_id=submission_id,
+        )
+
+        submission = await self.submission_repository.get_by_id(
+            submission_id,
+        )
+
+        if submission is None:
+            raise ValueError("Submission not found.")
+
+        assignment = submission.assignment
+
+        if assignment is None:
+            raise ValueError("Assignment not found.")
+
+        if assignment.teacher_id != current_user.id:
+            raise ValueError("You are not the teacher for this assignment.")
+
+        submission.feedback = feedback
+        submission.status = SubmissionStatus.UNDER_REVIEW
+
+        async with transactional(self.db):
+            submission = await self.submission_repository.update(
+                submission,
+            )
+
+            logger.info(
+                "Submission reviewed successfully",
+                submission_id=submission.id,
+                assignment_id=submission.assignment_id,
+                student_id=submission.student_id,
+                teacher_id=current_user.id,
+            )
+
+            return submission

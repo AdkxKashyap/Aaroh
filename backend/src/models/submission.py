@@ -15,17 +15,12 @@ For the MVP:
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
-from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
-
-from src.models.assignment import Assignment
-from src.models.student import Student
+from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.enums.submission import SubmissionStatus
+from src.models.assignment import Assignment
 from src.models.base import BaseModel
+from src.models.student import Student
 
 
 class Submission(BaseModel):
@@ -58,7 +53,10 @@ class Submission(BaseModel):
         DateTime(timezone=True),
         nullable=True,
     )
-
+    feedback: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
     assignment: Mapped["Assignment"] = relationship()
 
     student: Mapped["Student"] = relationship()
