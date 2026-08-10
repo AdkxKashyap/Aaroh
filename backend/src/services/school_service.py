@@ -27,7 +27,9 @@ class SchoolService:
     ):
         self.school_repository = school_repository
         self.user_repository = user_repository
-
+    """
+    TODO: Should we make school creator admin by default? Or should we have a separate endpoint to promote them to admin?
+    """
     async def create_school(
         self,
         name: str,

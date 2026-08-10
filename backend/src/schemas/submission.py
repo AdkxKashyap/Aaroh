@@ -11,7 +11,12 @@ class SubmissionResponse(BaseModel):
     student_id: uuid.UUID
     status: SubmissionStatus
     submitted_at: datetime | None
+    feedback: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class RevisionRequest(BaseModel):
+    feedback: str
