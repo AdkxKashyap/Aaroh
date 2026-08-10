@@ -12,6 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from src.core.logger import logger
+from src.models.student import Student
 from src.models.submission import Submission
 
 
@@ -57,7 +58,11 @@ class SubmissionRepository:
         try:
             result = await self.db.execute(
                 select(Submission)
-                .options(selectinload(Submission.assignment))
+                .options(
+                    selectinload(Submission.assignment),
+                    selectinload(Submission.student).selectinload(Student.user),
+                    selectinload(Submission.student).selectinload(Student.school_class),
+                )
                 .where(Submission.id == submission_id)
             )
 
@@ -121,7 +126,13 @@ class SubmissionRepository:
     ) -> list[Submission]:
         try:
             result = await self.db.execute(
-                select(Submission).where(Submission.assignment_id == assignment_id)
+                select(Submission)
+                .options(
+                    selectinload(Submission.assignment),
+                    selectinload(Submission.student).selectinload(Student.user),
+                    selectinload(Submission.student).selectinload(Student.school_class),
+                )
+                .where(Submission.assignment_id == assignment_id)
             )
 
             return list(result.scalars().all())

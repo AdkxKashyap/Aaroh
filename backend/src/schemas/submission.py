@@ -12,6 +12,10 @@ class SubmissionResponse(BaseModel):
     status: SubmissionStatus
     submitted_at: datetime | None
     feedback: str | None = None
+    assignment_name: str | None = None
+    student_name: str | None = None
+    class_name: str | None = None
+    class_id: uuid.UUID | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
