@@ -16,6 +16,7 @@ from src.models.user import User
 from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.student_repository import StudentRepository
 from src.repositories.submission_repository import SubmissionRepository
+from src.services.submission_state_machine import SubmissionStateMachine
 
 
 class SubmissionService:
@@ -31,6 +32,7 @@ class SubmissionService:
         self.student_repository = student_repository
         self.assignment_repository = assignment_repository
         self.db = db
+        self.state_machine = SubmissionStateMachine()
 
     async def submit_assignment(
         self,
@@ -70,7 +72,6 @@ class SubmissionService:
             raise ValueError("Assignment does not belong to your class.")
 
         async with transactional(self.db):
-
             submission = await self.submission_repository.get_by_assignment_and_student(
                 assignment_id=assignment_id,
                 student_id=student.id,
@@ -79,26 +80,33 @@ class SubmissionService:
             now = datetime.now(timezone.utc)
 
             if submission is None:
-
+                target_status = SubmissionStatus.SUBMITTED
+                self.state_machine.transition(
+                    SubmissionStatus.NOT_SUBMITTED,
+                    target_status,
+                )
                 submission = Submission(
                     assignment_id=assignment_id,
                     student_id=student.id,
-                    status=SubmissionStatus.SUBMITTED,
+                    status=target_status,
                     submitted_at=now,
                 )
-
-                submission = await self.submission_repository.create(
-                    submission,
-                )
-
+                submission = await self.submission_repository.create(submission)
             else:
+                if submission.status != SubmissionStatus.REVISION_REQUESTED:
+                    raise ValueError(
+                        "Resubmission is only allowed after revision is requested."
+                    )
 
-                submission.status = SubmissionStatus.SUBMITTED
-                submission.submitted_at = now
-
-                submission = await self.submission_repository.update(
-                    submission,
+                target_status = SubmissionStatus.RESUBMITTED
+                self.state_machine.transition(
+                    submission.status,
+                    target_status,
                 )
+                submission.status = target_status
+                submission.submitted_at = now
+                submission.feedback = None
+                submission = await self.submission_repository.update(submission)
 
             logger.info(
                 "Assignment submitted successfully",
@@ -140,51 +148,122 @@ class SubmissionService:
 
         return submissions
 
-    async def review_submission(
+    async def start_review(
         self,
         current_user: User,
         submission_id: uuid.UUID,
-        feedback: str,
     ) -> Submission:
-        """
-        Review a submission for an assignment.
-        """
-
         logger.info(
-            "Reviewing submission",
+            "Starting review",
             user_id=current_user.id,
             submission_id=submission_id,
         )
 
-        submission = await self.submission_repository.get_by_id(
-            submission_id,
-        )
+        submission = await self.submission_repository.get_by_id(submission_id)
 
         if submission is None:
             raise ValueError("Submission not found.")
 
         assignment = submission.assignment
-
         if assignment is None:
             raise ValueError("Assignment not found.")
 
         if assignment.teacher_id != current_user.id:
             raise ValueError("You are not the teacher for this assignment.")
 
-        submission.feedback = feedback
-        submission.status = SubmissionStatus.UNDER_REVIEW
-
         async with transactional(self.db):
-            submission = await self.submission_repository.update(
-                submission,
+            target_status = self.state_machine.transition(
+                submission.status,
+                SubmissionStatus.UNDER_REVIEW,
             )
+            submission.status = target_status
+            submission = await self.submission_repository.update(submission)
 
             logger.info(
-                "Submission reviewed successfully",
+                "Submission moved to under review",
                 submission_id=submission.id,
                 assignment_id=submission.assignment_id,
                 student_id=submission.student_id,
                 teacher_id=current_user.id,
             )
+            return submission
 
+    async def request_revision(
+        self,
+        current_user: User,
+        submission_id: uuid.UUID,
+        feedback: str,
+    ) -> Submission:
+        logger.info(
+            "Requesting revision",
+            user_id=current_user.id,
+            submission_id=submission_id,
+        )
+
+        submission = await self.submission_repository.get_by_id(submission_id)
+        if submission is None:
+            raise ValueError("Submission not found.")
+
+        assignment = submission.assignment
+        if assignment is None:
+            raise ValueError("Assignment not found.")
+
+        if assignment.teacher_id != current_user.id:
+            raise ValueError("You are not the teacher for this assignment.")
+
+        async with transactional(self.db):
+            target_status = self.state_machine.transition(
+                submission.status,
+                SubmissionStatus.REVISION_REQUESTED,
+            )
+            submission.status = target_status
+            submission.feedback = feedback
+            submission = await self.submission_repository.update(submission)
+
+            logger.info(
+                "Submission revision requested",
+                submission_id=submission.id,
+                assignment_id=submission.assignment_id,
+                student_id=submission.student_id,
+                teacher_id=current_user.id,
+            )
+            return submission
+
+    async def complete_submission(
+        self,
+        current_user: User,
+        submission_id: uuid.UUID,
+    ) -> Submission:
+        logger.info(
+            "Completing submission",
+            user_id=current_user.id,
+            submission_id=submission_id,
+        )
+
+        submission = await self.submission_repository.get_by_id(submission_id)
+        if submission is None:
+            raise ValueError("Submission not found.")
+
+        assignment = submission.assignment
+        if assignment is None:
+            raise ValueError("Assignment not found.")
+
+        if assignment.teacher_id != current_user.id:
+            raise ValueError("You are not the teacher for this assignment.")
+
+        async with transactional(self.db):
+            target_status = self.state_machine.transition(
+                submission.status,
+                SubmissionStatus.COMPLETED,
+            )
+            submission.status = target_status
+            submission = await self.submission_repository.update(submission)
+
+            logger.info(
+                "Submission completed",
+                submission_id=submission.id,
+                assignment_id=submission.assignment_id,
+                student_id=submission.student_id,
+                teacher_id=current_user.id,
+            )
             return submission

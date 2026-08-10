@@ -119,9 +119,15 @@ class SubmissionRepository:
         self,
         assignment_id: uuid.UUID,
     ) -> list[Submission]:
+        try:
+            result = await self.db.execute(
+                select(Submission).where(Submission.assignment_id == assignment_id)
+            )
 
-        result = await self.db.execute(
-            select(Submission).where(Submission.assignment_id == assignment_id)
-        )
-
-        return list(result.scalars().all())
+            return list(result.scalars().all())
+        except SQLAlchemyError:
+            logger.exception(
+                "Failed to fetch submissions for assignment",
+                assignment_id=assignment_id,
+            )
+            raise
