@@ -13,6 +13,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.core.logger import logger
 from src.models.school_class import SchoolClass
 from src.models.teacher_class import TeacherClass
@@ -56,7 +57,9 @@ class SchoolClassRepository:
 
         try:
             result = await self.db.execute(
-                select(SchoolClass).where(SchoolClass.id == class_id)
+                select(SchoolClass)
+                .options(selectinload(SchoolClass.school))
+                .where(SchoolClass.id == class_id)
             )
 
             return result.scalar_one_or_none()
@@ -78,7 +81,9 @@ class SchoolClassRepository:
 
         try:
             result = await self.db.execute(
-                select(SchoolClass).where(SchoolClass.school_id == school_id)
+                select(SchoolClass)
+                .options(selectinload(SchoolClass.school))
+                .where(SchoolClass.school_id == school_id)
             )
 
             return list(result.scalars().all())
@@ -128,6 +133,7 @@ class SchoolClassRepository:
         try:
             result = await self.db.execute(
                 select(SchoolClass)
+                .options(selectinload(SchoolClass.school))
                 .join(TeacherClass, TeacherClass.class_id == SchoolClass.id)
                 .where(TeacherClass.teacher_id == teacher_id)
             )

@@ -10,6 +10,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from src.core.logger import logger
 from src.models.assignment import Assignment
 
@@ -58,7 +59,12 @@ class AssignmentRepository:
         try:
 
             result = await self.db.execute(
-                select(Assignment).where(
+                select(Assignment)
+                .options(
+                    selectinload(Assignment.teacher),
+                    selectinload(Assignment.school_class),
+                )
+                .where(
                     Assignment.id == assignment_id,
                 )
             )
@@ -86,7 +92,12 @@ class AssignmentRepository:
         try:
 
             result = await self.db.execute(
-                select(Assignment).where(
+                select(Assignment)
+                .options(
+                    selectinload(Assignment.teacher),
+                    selectinload(Assignment.school_class),
+                )
+                .where(
                     Assignment.class_id == class_id,
                 )
             )

@@ -9,6 +9,7 @@ from src.models.user import User
 from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
+from src.schemas.assignment import AssignmentResponse
 
 """
 Assignment Service
@@ -52,6 +53,21 @@ class AssignmentService:
         self.class_repository = class_repository
         self.teacher_class_repository = teacher_class_repository
 
+    def _to_response(self, assignment: Assignment) -> AssignmentResponse:
+        return AssignmentResponse(
+            id=assignment.id,
+            title=assignment.title,
+            description=assignment.description,
+            due_date=assignment.due_date,
+            teacher_id=assignment.teacher_id,
+            class_id=assignment.class_id,
+            status=assignment.status,
+            teacher_name=assignment.teacher.username if assignment.teacher else None,
+            class_name=(
+                assignment.school_class.name if assignment.school_class else None
+            ),
+        )
+
     async def create_assignment(
         self,
         current_user: User,
@@ -59,7 +75,7 @@ class AssignmentService:
         description: str,
         due_date: datetime,
         class_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
         """
         Creates an assignment.
         """
@@ -125,7 +141,7 @@ class AssignmentService:
         self,
         current_user: User,
         class_id: uuid.UUID,
-    ) -> list[Assignment]:
+    ) -> list[AssignmentResponse]:
         school_class = await self.class_repository.get_by_id(
             class_id,
         )
@@ -141,16 +157,18 @@ class AssignmentService:
         if mapping is None:
             raise ValueError("Teacher is not assigned to this class.")
 
-        return await self.assignment_repository.get_by_class(
+        assignments = await self.assignment_repository.get_by_class(
             class_id,
         )
+
+        return [self._to_response(assignment) for assignment in assignments]
 
     async def transition_status(
         self,
         current_user: User,
         assignment_id: uuid.UUID,
         new_status: AssignmentStatus,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
         """
         Transition an assignment to a valid next state.
         """
@@ -218,7 +236,7 @@ class AssignmentService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
 
         return await self.transition_status(
             current_user=current_user,
@@ -230,7 +248,7 @@ class AssignmentService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
 
         return await self.transition_status(
             current_user=current_user,
@@ -242,7 +260,7 @@ class AssignmentService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
 
         return await self.transition_status(
             current_user=current_user,
@@ -254,7 +272,7 @@ class AssignmentService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
 
         return await self.transition_status(
             current_user=current_user,
@@ -266,7 +284,7 @@ class AssignmentService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Assignment:
+    ) -> AssignmentResponse:
 
         return await self.transition_status(
             current_user=current_user,

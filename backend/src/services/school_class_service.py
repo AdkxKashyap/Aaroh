@@ -13,6 +13,7 @@ from src.models.school_class import SchoolClass
 from src.models.user import User
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
+from src.schemas.school_class import SchoolClassResponse
 
 
 class SchoolClassService:
@@ -25,11 +26,19 @@ class SchoolClassService:
         self.class_repository = class_repository
         self.school_repository = school_repository
 
+    def _to_response(self, school_class: SchoolClass) -> SchoolClassResponse:
+        return SchoolClassResponse(
+            id=school_class.id,
+            name=school_class.name,
+            school_id=school_class.school_id,
+            school_name=school_class.school.name if school_class.school else None,
+        )
+
     async def create_class(
         self,
         current_user: User,
         name: str,
-    ) -> SchoolClass:
+    ) -> SchoolClassResponse:
         """
         Create a class under a school.
         """
@@ -56,23 +65,25 @@ class SchoolClassService:
         )
 
         async with transactional(self.class_repository.db):
-            return await self.class_repository.create(school_class)
+            created_class = await self.class_repository.create(school_class)
+            return self._to_response(created_class)
 
     async def get_classes(
         self,
         school_id: uuid.UUID,
-    ) -> list[SchoolClass]:
+    ) -> list[SchoolClassResponse]:
         """
         Fetch all classes for a school.
         """
 
-        return await self.class_repository.get_by_school(school_id)
+        classes = await self.class_repository.get_by_school(school_id)
+        return [self._to_response(school_class) for school_class in classes]
 
     async def update_class(
         self,
         class_id: uuid.UUID,
         name: str,
-    ) -> SchoolClass:
+    ) -> SchoolClassResponse:
         """
         Update a class's name.
         """
@@ -91,7 +102,8 @@ class SchoolClassService:
         school_class.name = name
 
         async with transactional(self.class_repository.db):
-            return await self.class_repository.update(school_class)
+            updated_class = await self.class_repository.update(school_class)
+            return self._to_response(updated_class)
 
     async def delete_class(
         self,
@@ -117,9 +129,10 @@ class SchoolClassService:
     async def get_class_by_teacher(
         self,
         teacher_id: uuid.UUID,
-    ) -> list[SchoolClass]:
+    ) -> list[SchoolClassResponse]:
         """
         Fetch all classes assigned to a teacher.
         """
 
-        return await self.class_repository.get_by_teacher(teacher_id)
+        classes = await self.class_repository.get_by_teacher(teacher_id)
+        return [self._to_response(school_class) for school_class in classes]

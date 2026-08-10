@@ -25,6 +25,7 @@ class StudentResponse(BaseModel):
     username: str | None = None
     class_name: str | None = None
     school_name: str | None = None
+    student_name: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,

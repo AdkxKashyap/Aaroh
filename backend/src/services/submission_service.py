@@ -16,10 +16,35 @@ from src.models.user import User
 from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.student_repository import StudentRepository
 from src.repositories.submission_repository import SubmissionRepository
+from src.schemas.submission import SubmissionResponse
 from src.services.submission_state_machine import SubmissionStateMachine
 
 
 class SubmissionService:
+
+    def _to_response(self, submission: Submission) -> SubmissionResponse:
+        return SubmissionResponse(
+            id=submission.id,
+            assignment_id=submission.assignment_id,
+            student_id=submission.student_id,
+            status=submission.status,
+            submitted_at=submission.submitted_at,
+            feedback=submission.feedback,
+            assignment_name=(
+                submission.assignment.title if submission.assignment else None
+            ),
+            student_name=(
+                submission.student.user.username
+                if submission.student and submission.student.user
+                else None
+            ),
+            class_name=(
+                submission.student.school_class.name
+                if submission.student and submission.student.school_class
+                else None
+            ),
+            class_id=submission.student.class_id if submission.student else None,
+        )
 
     def __init__(
         self,
@@ -38,7 +63,7 @@ class SubmissionService:
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> Submission:
+    ) -> SubmissionResponse:
         """
         Submit an assignment for the authenticated student.
 
@@ -115,13 +140,13 @@ class SubmissionService:
                 student_id=student.id,
             )
 
-            return submission
+            return self._to_response(submission)
 
     async def get_assignment_submissions(
         self,
         current_user: User,
         assignment_id: uuid.UUID,
-    ) -> list[Submission]:
+    ) -> list[SubmissionResponse]:
         """
         Get all submissions for an assignment.
         """
@@ -146,13 +171,13 @@ class SubmissionService:
             assignment_id,
         )
 
-        return submissions
+        return [self._to_response(submission) for submission in submissions]
 
     async def start_review(
         self,
         current_user: User,
         submission_id: uuid.UUID,
-    ) -> Submission:
+    ) -> SubmissionResponse:
         logger.info(
             "Starting review",
             user_id=current_user.id,
@@ -186,14 +211,14 @@ class SubmissionService:
                 student_id=submission.student_id,
                 teacher_id=current_user.id,
             )
-            return submission
+            return self._to_response(submission)
 
     async def request_revision(
         self,
         current_user: User,
         submission_id: uuid.UUID,
         feedback: str,
-    ) -> Submission:
+    ) -> SubmissionResponse:
         logger.info(
             "Requesting revision",
             user_id=current_user.id,
@@ -227,13 +252,13 @@ class SubmissionService:
                 student_id=submission.student_id,
                 teacher_id=current_user.id,
             )
-            return submission
+            return self._to_response(submission)
 
     async def complete_submission(
         self,
         current_user: User,
         submission_id: uuid.UUID,
-    ) -> Submission:
+    ) -> SubmissionResponse:
         logger.info(
             "Completing submission",
             user_id=current_user.id,
@@ -266,4 +291,4 @@ class SubmissionService:
                 student_id=submission.student_id,
                 teacher_id=current_user.id,
             )
-            return submission
+            return self._to_response(submission)

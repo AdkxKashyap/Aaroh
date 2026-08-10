@@ -31,6 +31,7 @@ class StudentService:
             username=student.user.username if student.user else None,
             class_name=student.school_class.name if student.school_class else None,
             school_name=student.school.name if student.school else None,
+            student_name=student.user.username if student.user else None,
         )
 
     def __init__(

@@ -27,6 +27,9 @@ class AssignmentResponse(BaseModel):
     teacher_id: uuid.UUID
     class_id: uuid.UUID
     status: AssignmentStatus
+    teacher_name: str | None = None
+    class_name: str | None = None
+
     model_config = ConfigDict(
         from_attributes=True,
     )
