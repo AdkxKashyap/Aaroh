@@ -15,6 +15,7 @@ configure_logging()
 
 from src.api.routers.assignment import router as assignment_router
 from src.api.routers.auth import router as auth_router
+from src.api.routers.document import router as document_router
 from src.api.routers.guardian import router as guardian_router
 from src.api.routers.health import router as health_router
 from src.api.routers.role import router as role_router
@@ -48,6 +49,7 @@ app.include_router(class_router)
 app.include_router(teacher_router)
 app.include_router(student_router)
 app.include_router(submission_router)
+app.include_router(document_router)
 app.include_router(guardian_router)
 
 

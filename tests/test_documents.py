@@ -64,7 +64,10 @@ class FakeDocumentRepository:
         self._transaction_active = False
 
     async def create(self, document):
-        if self.db.info.get("service_transaction_depth", 0) > 0 and not self._transaction_active:
+        if (
+            self.db.info.get("service_transaction_depth", 0) > 0
+            and not self._transaction_active
+        ):
             self._transaction_active = True
             self._snapshot = dict(self.documents)
 
@@ -80,12 +83,18 @@ class FakeDocumentRepository:
 
     async def get_by_hash(self, school_id, content_hash):
         for document in self.documents.values():
-            if document.school_id == school_id and document.content_hash == content_hash:
+            if (
+                document.school_id == school_id
+                and document.content_hash == content_hash
+            ):
                 return document
         return None
 
     async def update(self, document):
-        if self.db.info.get("service_transaction_depth", 0) > 0 and not self._transaction_active:
+        if (
+            self.db.info.get("service_transaction_depth", 0) > 0
+            and not self._transaction_active
+        ):
             self._transaction_active = True
             self._snapshot = dict(self.documents)
 
@@ -122,11 +131,17 @@ class FakeDocumentVersionRepository:
         self._transaction_active = False
 
     async def create(self, version):
-        if self.db.info.get("service_transaction_depth", 0) > 0 and not self._transaction_active:
+        if (
+            self.db.info.get("service_transaction_depth", 0) > 0
+            and not self._transaction_active
+        ):
             self._transaction_active = True
             self._snapshot = (
                 dict(self.versions),
-                {document_id: list(versions) for document_id, versions in self.by_document.items()},
+                {
+                    document_id: list(versions)
+                    for document_id, versions in self.by_document.items()
+                },
             )
 
         if version.id is None:
@@ -309,7 +324,9 @@ def test_get_versions_returns_versions_for_document(document_service):
     assert versions[0].version == 1
 
 
-def test_create_version_creates_version_two_and_updates_current_version(document_service):
+def test_create_version_creates_version_two_and_updates_current_version(
+    document_service,
+):
     service, _, _, _ = document_service
 
     created = asyncio.run(
@@ -399,7 +416,9 @@ def test_create_document_is_atomic(document_service):
         async def create(self, version):
             raise RuntimeError("boom")
 
-    service.document_version_repository = FailingVersionRepo(service.document_version_repository.db)
+    service.document_version_repository = FailingVersionRepo(
+        service.document_version_repository.db
+    )
 
     with pytest.raises(RuntimeError):
         asyncio.run(
