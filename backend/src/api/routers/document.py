@@ -38,6 +38,7 @@ async def create_document(
     ],
     document_type: str = Form(default="upload"),
     file: UploadFile | None = File(default=None),
+    class_id: uuid.UUID | None = Form(default=None),
 ):
 
     if file is None:
@@ -52,6 +53,8 @@ async def create_document(
             uploaded_by=current_user.id,
             document_type=document_type,
             file=file,
+            current_user=current_user,
+            class_id=class_id,
         )
     except ValueError as ex:
         raise HTTPException(

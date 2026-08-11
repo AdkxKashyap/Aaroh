@@ -170,15 +170,26 @@ class FakeDocumentVersionRepository:
         return None
 
 
+class FakeTeacherClassRepository:
+    def __init__(self, db):
+        self.db = db
+        self.mappings = {}
+
+    async def get(self, teacher_id, class_id):
+        return self.mappings.get((teacher_id, class_id))
+
+
 @pytest.fixture
 def document_service():
     db = FakeDB()
     document_repository = FakeDocumentRepository(db)
     version_repository = FakeDocumentVersionRepository(db)
+    teacher_class_repository = FakeTeacherClassRepository(db)
     service = DocumentService(
         document_repository=document_repository,
         document_version_repository=version_repository,
         db=db,
+        teacher_class_repository=teacher_class_repository,
     )
     return service, document_repository, version_repository, db
 
@@ -495,3 +506,58 @@ def test_repositories_do_not_commit_independently(document_service):
     )
 
     assert db.commit_calls == 1
+
+
+def test_assignment_brief_requires_teacher_assignment(document_service):
+    service, _, _, _ = document_service
+
+    class FakeUploadFile:
+        filename = "Brief.pdf"
+
+        async def read(self):
+            return b"assignment brief"
+
+    current_user = SimpleNamespace(
+        id=uuid.uuid4(),
+        school_id=uuid.uuid4(),
+        roles=[SimpleNamespace(role=SimpleNamespace(name="TEACHER"))],
+    )
+
+    with pytest.raises(ValueError, match="assigned to this class"):
+        asyncio.run(
+            service.create_document(
+                school_id=current_user.school_id,
+                uploaded_by=current_user.id,
+                document_type="assignment_brief",
+                file=FakeUploadFile(),
+                current_user=current_user,
+                class_id=uuid.uuid4(),
+            )
+        )
+
+
+def test_unsupported_document_type_is_rejected(document_service):
+    service, _, _, _ = document_service
+
+    class FakeUploadFile:
+        filename = "Brief.pdf"
+
+        async def read(self):
+            return b"assignment brief"
+
+    current_user = SimpleNamespace(
+        id=uuid.uuid4(),
+        school_id=uuid.uuid4(),
+        roles=[SimpleNamespace(role=SimpleNamespace(name="ADMIN"))],
+    )
+
+    with pytest.raises(ValueError, match="Unsupported document type"):
+        asyncio.run(
+            service.create_document(
+                school_id=current_user.school_id,
+                uploaded_by=current_user.id,
+                document_type="invoice",
+                file=FakeUploadFile(),
+                current_user=current_user,
+            )
+        )

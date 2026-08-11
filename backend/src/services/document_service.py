@@ -13,11 +13,14 @@ from src.config.settings import get_settings
 from src.core.logger import logger
 from src.db.transaction import transactional
 from src.enums.document_status import DocumentStatus
+from src.enums.document_type import DocumentType
+from src.enums.role import RoleName
 from src.models.document import Document
 from src.models.document_version import DocumentVersion
 from src.models.user import User
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.document_version_repository import DocumentVersionRepository
+from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.services.document_state_machine import DocumentStateMachine
 from src.services.storage import FileStorage, LocalFileStorage
 
@@ -29,11 +32,13 @@ class DocumentService:
         document_version_repository: DocumentVersionRepository,
         db,
         storage: FileStorage | None = None,
+        teacher_class_repository: TeacherClassRepository | None = None,
     ):
         self.document_repository = document_repository
         self.document_version_repository = document_version_repository
         self.db = db
         self.storage = storage or LocalFileStorage()
+        self.teacher_class_repository = teacher_class_repository
 
     def _sanitize_filename(self, filename: str) -> str:
         safe_name = Path(filename).name
@@ -87,15 +92,65 @@ class DocumentService:
                 f"Only the following file types are allowed: {', '.join(allowed_extensions)}."
             )
 
+    def _normalize_role_names(self, current_user: User | None) -> set[str]:
+        if current_user is None:
+            return set()
+
+        roles: set[str] = set()
+        for user_role in getattr(current_user, "roles", []) or []:
+            role_name = getattr(getattr(user_role, "role", None), "name", None)
+            if role_name:
+                roles.add(role_name)
+        return roles
+
+    async def _validate_document_type_and_authorization(
+        self,
+        document_type: DocumentType,
+        current_user: User | None,
+        class_id: uuid.UUID | None = None,
+    ) -> None:
+        if document_type == DocumentType.CLASS_ROSTER:
+            if RoleName.ADMIN not in self._normalize_role_names(current_user):
+                raise ValueError("Only admins can upload class rosters.")
+            return
+
+        if document_type == DocumentType.ASSIGNMENT_BRIEF:
+            if RoleName.TEACHER not in self._normalize_role_names(current_user):
+                raise ValueError("Only teachers can upload assignment briefs.")
+            if class_id is None:
+                raise ValueError("Assignment brief requires a class_id.")
+            if self.teacher_class_repository is None:
+                raise ValueError("Teacher class mapping repository is not configured.")
+
+            teacher_id = getattr(current_user, "id", None)
+            if teacher_id is None:
+                raise ValueError("Authenticated teacher is required.")
+
+            mapping = await self.teacher_class_repository.get(teacher_id, class_id)
+            if mapping is None:
+                raise ValueError("Teacher is not assigned to this class.")
+            return
+
     async def create_document(
         self,
         school_id: uuid.UUID,
         uploaded_by: uuid.UUID,
-        document_type: str,
-        file=None,
+        document_type: DocumentType,
+        file,
+        current_user: User | None = None,
+        class_id: uuid.UUID | None = None,
     ) -> Document:
+        if file is None:
+            raise ValueError("A file upload is required.")
+
         file_bytes = await file.read()
-        original_filename = file.filename or "upload"
+        original_filename = file.filename
+
+        await self._validate_document_type_and_authorization(
+            document_type,
+            current_user,
+            class_id,
+        )
         self._validate_upload(file_bytes, original_filename)
 
         content_hash = hashlib.sha256(file_bytes).hexdigest()

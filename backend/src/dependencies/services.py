@@ -307,12 +307,17 @@ def get_document_service(
         DocumentVersionRepository,
         Depends(get_document_version_repository),
     ],
+    teacher_class_repository: Annotated[
+        TeacherClassRepository,
+        Depends(get_teacher_class_repository),
+    ],
 ) -> DocumentService:
     return DocumentService(
         document_repository=document_repository,
         document_version_repository=document_version_repository,
         db=db,
         storage=LocalFileStorage(),
+        teacher_class_repository=teacher_class_repository,
     )
 
 
