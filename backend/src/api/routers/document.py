@@ -8,16 +8,12 @@ Responsibility:
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from src.core.auth import get_current_user, require_role
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from src.core.auth import require_role
 from src.dependencies.services import get_document_service
 from src.enums.role import RoleName
 from src.models.user import User
-from src.schemas.document import (
-    CreateDocumentRequest,
-    DocumentResponse,
-    DocumentVersionResponse,
-)
+from src.schemas.document import DocumentResponse, DocumentVersionResponse
 from src.services.document_service import DocumentService
 
 router = APIRouter(
@@ -32,7 +28,6 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_document(
-    request: CreateDocumentRequest,
     current_user: Annotated[
         User,
         Depends(require_role(RoleName.ADMIN, RoleName.TEACHER)),
@@ -41,20 +36,22 @@ async def create_document(
         DocumentService,
         Depends(get_document_service),
     ],
+    document_type: str = Form(default="upload"),
+    file: UploadFile | None = File(default=None),
 ):
-    if current_user.school_id is None:
+
+    if file is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A file upload is required.",
         )
 
     try:
         return await document_service.create_document(
             school_id=current_user.school_id,
             uploaded_by=current_user.id,
-            document_type=request.document_type,
-            content_hash=request.content_hash,
-            storage_key=request.storage_key,
+            document_type=document_type,
+            file=file,
         )
     except ValueError as ex:
         raise HTTPException(
@@ -83,7 +80,7 @@ async def get_document(
         Depends(get_document_service),
     ],
 ):
-    document = await document_service.get_document(current_user, document_id)
+    document = await document_service.get_document(document_id, current_user)
     if document is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -108,7 +105,7 @@ async def get_document_versions(
     ],
 ):
     try:
-        return await document_service.get_versions(current_user, document_id)
+        return await document_service.get_versions(document_id, current_user)
     except ValueError as ex:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

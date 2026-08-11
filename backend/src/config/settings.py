@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024
+    ALLOWED_UPLOAD_EXTENSIONS: str = ".pdf,.docx,.xlsx,.xls"
 
     model_config = SettingsConfigDict(
         env_file=".env",

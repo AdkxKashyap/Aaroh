@@ -34,6 +34,7 @@ from src.services.guardian_service import GuardianService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
+from src.services.storage import LocalFileStorage
 from src.services.student_service import StudentService
 from src.services.submission_service import SubmissionService
 from src.services.teacher_service import TeacherService
@@ -311,6 +312,7 @@ def get_document_service(
         document_repository=document_repository,
         document_version_repository=document_version_repository,
         db=db,
+        storage=LocalFileStorage(),
     )
 
 

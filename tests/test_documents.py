@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import sys
 import uuid
 from pathlib import Path
@@ -232,6 +233,26 @@ def test_new_document_starts_in_uploaded_state(document_service):
     )
 
     assert created.status == DocumentStatus.UPLOADED
+
+
+def test_create_document_uses_uploaded_bytes_for_hash_and_storage_key(document_service):
+    service, _, _, _ = document_service
+
+    file_bytes = b"class roster content"
+    created = asyncio.run(
+        service.create_document(
+            school_id=uuid.uuid4(),
+            uploaded_by=uuid.uuid4(),
+            document_type="class_roster",
+            file_bytes=file_bytes,
+            original_filename="Roster.pdf",
+        )
+    )
+
+    assert created.content_hash == hashlib.sha256(file_bytes).hexdigest()
+    assert created.current_version == 1
+    assert created.status == DocumentStatus.UPLOADED
+    assert created.content_hash != ""
 
 
 def test_duplicate_document_within_same_school_is_rejected(document_service):
