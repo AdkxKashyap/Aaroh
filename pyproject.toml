@@ -36,3 +36,4 @@ skip_gitignore = true
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 addopts = "-v --strict-markers"
+markers = ["asyncio: mark tests as asyncio"]

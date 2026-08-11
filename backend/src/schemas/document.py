@@ -13,8 +13,8 @@ from src.enums.document_status import DocumentStatus
 
 class CreateDocumentRequest(BaseModel):
     document_type: str
-    content_hash: str
-    storage_key: str
+    content_hash: str | None = None
+    storage_key: str | None = None
 
 
 class DocumentResponse(BaseModel):

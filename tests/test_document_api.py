@@ -38,10 +38,10 @@ class FakeDocumentService:
     async def create_document(self, **kwargs):
         return self.document
 
-    async def get_document(self, document_id):
+    async def get_document(self, document_id, current_user=None):
         return self.document if document_id == self.document.id else None
 
-    async def get_versions(self, document_id):
+    async def get_versions(self, document_id, current_user=None):
         return self.versions if document_id == self.document.id else []
 
 
@@ -79,6 +79,28 @@ def test_get_document_endpoint():
     )
 
     assert response.id == fake_service.document.id
+
+
+def test_create_document_endpoint_accepts_upload_file():
+    fake_service = FakeDocumentService()
+    current_user = SimpleNamespace(id=uuid.uuid4(), school_id=uuid.uuid4())
+
+    class FakeUploadFile:
+        filename = "Roster.pdf"
+
+        async def read(self):
+            return b"roster"
+
+    response = asyncio.run(
+        create_document(
+            request=None,
+            file=FakeUploadFile(),
+            current_user=current_user,
+            document_service=fake_service,
+        )
+    )
+
+    assert response.document_type == "invoice"
 
 
 def test_get_versions_endpoint():
