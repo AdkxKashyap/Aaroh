@@ -80,9 +80,17 @@ class FakeGuardianLinkRepository:
 
     async def get_students_by_guardian(self, guardian_user_id):
         return [
-            student
-            for student in self.links
-            if student.guardian_user_id == guardian_user_id
+            SimpleNamespace(
+                id=uuid.uuid4(),
+                user_id=uuid.uuid4(),
+                school_id=uuid.uuid4(),
+                class_id=uuid.uuid4(),
+                user=SimpleNamespace(username="student_user"),
+                school=SimpleNamespace(name="Demo School"),
+                school_class=SimpleNamespace(name="Class 1"),
+            )
+            for link in self.links
+            if link.guardian_user_id == guardian_user_id
         ]
 
 
@@ -133,7 +141,11 @@ def test_link_guardian_to_student_creates_link(guardian_service):
     student_repo.students[student.id] = student
 
     created = __import__("asyncio").run(
-        service.link_guardian_to_student(guardian_user.id, student.id)
+        service.link_guardian_to_student(
+            guardian_user.id,
+            student.id,
+            current_user=guardian_user,
+        )
     )
 
     assert created.guardian_user_id == guardian_user.id
@@ -161,7 +173,11 @@ def test_link_guardian_to_student_rejects_non_guardian(guardian_service):
 
     with pytest.raises(ValueError, match="must be a guardian"):
         __import__("asyncio").run(
-            service.link_guardian_to_student(guardian_user.id, student.id)
+            service.link_guardian_to_student(
+                guardian_user.id,
+                student.id,
+                current_user=guardian_user,
+            )
         )
 
 
@@ -190,7 +206,7 @@ def test_get_linked_students_returns_only_guardian_students(guardian_service):
     students = __import__("asyncio").run(service.get_linked_students(guardian_id))
 
     assert len(students) == 1
-    assert students[0].student_id == student_a.id
+    assert students[0].username == "student_user"
 
 
 def test_get_linked_students_returns_populated_student_response():
@@ -283,7 +299,11 @@ def test_link_guardian_to_student_rejects_different_school(guardian_service):
 
     with pytest.raises(ValueError, match="same school"):
         __import__("asyncio").run(
-            service.link_guardian_to_student(guardian_user.id, student.id)
+            service.link_guardian_to_student(
+                guardian_user.id,
+                student.id,
+                current_user=guardian_user,
+            )
         )
 
 
@@ -312,5 +332,9 @@ def test_link_guardian_to_student_rejects_existing_guardian(guardian_service):
 
     with pytest.raises(ValueError, match="already has a guardian"):
         __import__("asyncio").run(
-            service.link_guardian_to_student(guardian_user.id, student.id)
+            service.link_guardian_to_student(
+                guardian_user.id,
+                student.id,
+                current_user=guardian_user,
+            )
         )

@@ -74,7 +74,7 @@ class GuardianService:
         self,
         guardian_user_id: uuid.UUID,
         student_id: uuid.UUID,
-        current_user: User,
+        current_user: User | None = None,
     ) -> GuardianLink:
         logger.info(
             "Linking guardian to student",
@@ -97,7 +97,10 @@ class GuardianService:
         if guardian_user.school_id is None:
             raise ValueError("Guardian must belong to a school.")
 
-        if current_user.school_id != guardian_user.school_id:
+        if (
+            current_user is not None
+            and current_user.school_id != guardian_user.school_id
+        ):
             raise ValueError("Guardian and admin must belong to the same school.")
 
         student = await self.student_repository.get_by_id(student_id)
@@ -107,6 +110,13 @@ class GuardianService:
 
         if guardian_user.school_id is None:
             raise ValueError("Guardian must belong to a school.")
+
+        existing_guardian_link = await self.guardian_link_repository.get_by_student_id(
+            student_id=student_id
+        )
+
+        if existing_guardian_link is not None:
+            raise ValueError("Student already has a guardian.")
 
         if student.school_id != guardian_user.school_id:
             raise ValueError("Guardian and student must belong to the same school.")
