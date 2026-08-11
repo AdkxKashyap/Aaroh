@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import Depends
 from src.dependencies.database import DbSession
 from src.repositories.assignment_repository import AssignmentRepository
+from src.repositories.guardian_link_repository import GuardianLinkRepository
 from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
@@ -26,6 +27,7 @@ from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.assignment_service import AssignmentService
 from src.services.auth_service import AuthService
+from src.services.guardian_service import GuardianService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
@@ -275,5 +277,39 @@ def get_submission_service(
         submission_repository=submission_repository,
         student_repository=student_repository,
         assignment_repository=assignment_repository,
+        db=db,
+    )
+
+
+def get_guardian_link_repository(
+    db: DbSession,
+) -> GuardianLinkRepository:
+    return GuardianLinkRepository(db)
+
+
+def get_guardian_service(
+    db: DbSession,
+    user_repository: Annotated[
+        UserRepository,
+        Depends(get_user_repository),
+    ],
+    student_repository: Annotated[
+        StudentRepository,
+        Depends(get_student_repository),
+    ],
+    guardian_link_repository: Annotated[
+        GuardianLinkRepository,
+        Depends(get_guardian_link_repository),
+    ],
+    role_repository: Annotated[
+        RoleRepository,
+        Depends(get_role_repository),
+    ],
+) -> GuardianService:
+    return GuardianService(
+        user_repository=user_repository,
+        student_repository=student_repository,
+        guardian_link_repository=guardian_link_repository,
+        role_repository=role_repository,
         db=db,
     )

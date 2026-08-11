@@ -36,7 +36,7 @@ class User(BaseModel):
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,
-        default=True,
+        default=True,#TODO: Change to False in production. [Invitation Workflow]After User verifies email & updates passw, set to True. 
     )
     """
     UserRole Model

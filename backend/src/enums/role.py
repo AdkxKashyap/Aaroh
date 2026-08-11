@@ -14,4 +14,5 @@ class RoleName(str, Enum):
     ADMIN = "ADMIN"
     TEACHER = "TEACHER"
     STUDENT = "STUDENT"
+    GUARDIAN = "GUARDIAN"
     PARENT = "PARENT"
