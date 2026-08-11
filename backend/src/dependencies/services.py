@@ -17,6 +17,8 @@ from typing import Annotated
 from fastapi import Depends
 from src.dependencies.database import DbSession
 from src.repositories.assignment_repository import AssignmentRepository
+from src.repositories.document_repository import DocumentRepository
+from src.repositories.document_version_repository import DocumentVersionRepository
 from src.repositories.guardian_link_repository import GuardianLinkRepository
 from src.repositories.role_repository import RoleRepository
 from src.repositories.school_class_repository import SchoolClassRepository
@@ -27,6 +29,7 @@ from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.assignment_service import AssignmentService
 from src.services.auth_service import AuthService
+from src.services.document_service import DocumentService
 from src.services.guardian_service import GuardianService
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
@@ -277,6 +280,36 @@ def get_submission_service(
         submission_repository=submission_repository,
         student_repository=student_repository,
         assignment_repository=assignment_repository,
+        db=db,
+    )
+
+
+def get_document_repository(
+    db: DbSession,
+) -> DocumentRepository:
+    return DocumentRepository(db)
+
+
+def get_document_version_repository(
+    db: DbSession,
+) -> DocumentVersionRepository:
+    return DocumentVersionRepository(db)
+
+
+def get_document_service(
+    db: DbSession,
+    document_repository: Annotated[
+        DocumentRepository,
+        Depends(get_document_repository),
+    ],
+    document_version_repository: Annotated[
+        DocumentVersionRepository,
+        Depends(get_document_version_repository),
+    ],
+) -> DocumentService:
+    return DocumentService(
+        document_repository=document_repository,
+        document_version_repository=document_version_repository,
         db=db,
     )
 
