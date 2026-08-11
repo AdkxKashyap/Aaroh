@@ -13,6 +13,8 @@ from src.config.settings import get_settings
 from src.models.base import Base
 
 # Import models so Alembic can discover them
+from src.models.document import Document
+from src.models.document_version import DocumentVersion
 from src.models.guardian_links import GuardianLink
 from src.models.role import Role
 from src.models.user import User
