@@ -35,7 +35,7 @@ async def create_document(
     request: CreateDocumentRequest,
     current_user: Annotated[
         User,
-        Depends(get_current_user),
+        Depends(require_role(RoleName.ADMIN, RoleName.TEACHER)),
     ],
     document_service: Annotated[
         DocumentService,
@@ -71,32 +71,24 @@ async def get_document(
     document_id: uuid.UUID,
     current_user: Annotated[
         User,
-        Depends(get_current_user),
+        Depends(
+            require_role(
+                RoleName.ADMIN,
+                RoleName.TEACHER,
+            )
+        ),
     ],
     document_service: Annotated[
         DocumentService,
         Depends(get_document_service),
     ],
 ):
-    if current_user.school_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied.",
-        )
-
-    document = await document_service.get_document(document_id)
+    document = await document_service.get_document(current_user, document_id)
     if document is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found.",
         )
-
-    if document.school_id != current_user.school_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied.",
-        )
-
     return document
 
 
@@ -108,34 +100,15 @@ async def get_document_versions(
     document_id: uuid.UUID,
     current_user: Annotated[
         User,
-        Depends(get_current_user),
+        Depends(require_role(RoleName.ADMIN, RoleName.TEACHER)),
     ],
     document_service: Annotated[
         DocumentService,
         Depends(get_document_service),
     ],
 ):
-    if current_user.school_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied.",
-        )
-
-    document = await document_service.get_document(document_id)
-    if document is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found.",
-        )
-
-    if document.school_id != current_user.school_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied.",
-        )
-
     try:
-        return await document_service.get_versions(document_id)
+        return await document_service.get_versions(current_user, document_id)
     except ValueError as ex:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

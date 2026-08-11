@@ -16,6 +16,8 @@ from src.repositories.document_repository import DocumentRepository
 from src.repositories.document_version_repository import DocumentVersionRepository
 from src.services.document_state_machine import DocumentStateMachine
 
+from backend.src.models.user import User
+
 
 class DocumentService:
     def __init__(
@@ -87,24 +89,37 @@ class DocumentService:
             )
             raise
 
-    async def get_document(self, document_id: uuid.UUID) -> Document | None:
-        return await self.document_repository.get_by_id(document_id)
+    async def get_document(
+        self, current_user: User, document_id: uuid.UUID
+    ) -> Document | None:
+        doc = await self.document_repository.get_by_id(document_id)
+        if doc is None:
+            return None
+        if doc.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
+        return doc
 
-    async def get_versions(self, document_id: uuid.UUID) -> list[DocumentVersion]:
+    async def get_versions(
+        self, current_user: User, document_id: uuid.UUID
+    ) -> list[DocumentVersion]:
         document = await self.document_repository.get_by_id(document_id)
         if document is None:
             raise ValueError("Document not found.")
+        if document.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
         return await self.document_version_repository.get_by_document(document_id)
 
     async def create_version(
         self,
+        current_user: User,
         document_id: uuid.UUID,
         storage_key: str,
     ) -> DocumentVersion:
         document = await self.document_repository.get_by_id(document_id)
         if document is None:
             raise ValueError("Document not found.")
-
+        if document.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
         next_version = document.current_version + 1
         version = DocumentVersion(
             document_id=document.id,
@@ -134,12 +149,15 @@ class DocumentService:
 
     async def transition_status(
         self,
+        current_user: User,
         document_id: uuid.UUID,
         target_status: DocumentStatus,
     ) -> Document:
         document = await self.document_repository.get_by_id(document_id)
         if document is None:
             raise ValueError("Document not found.")
+        if document.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
 
         try:
             DocumentStateMachine.transition(document.status, target_status)

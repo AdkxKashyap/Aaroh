@@ -6,7 +6,11 @@ from types import SimpleNamespace
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "backend"))
 
-from src.api.routers.document import create_document, get_document, get_document_versions
+from src.api.routers.document import (
+    create_document,
+    get_document,
+    get_document_versions,
+)
 from src.models.document import Document
 from src.models.document_version import DocumentVersion
 
@@ -62,7 +66,9 @@ def test_create_document_endpoint():
 
 def test_get_document_endpoint():
     fake_service = FakeDocumentService()
-    current_user = SimpleNamespace(id=uuid.uuid4(), school_id=fake_service.document.school_id)
+    current_user = SimpleNamespace(
+        id=uuid.uuid4(), school_id=fake_service.document.school_id
+    )
 
     response = asyncio.run(
         get_document(
@@ -77,7 +83,9 @@ def test_get_document_endpoint():
 
 def test_get_versions_endpoint():
     fake_service = FakeDocumentService()
-    current_user = SimpleNamespace(id=uuid.uuid4(), school_id=fake_service.document.school_id)
+    current_user = SimpleNamespace(
+        id=uuid.uuid4(), school_id=fake_service.document.school_id
+    )
 
     response = asyncio.run(
         get_document_versions(
