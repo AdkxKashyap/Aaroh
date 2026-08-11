@@ -10,7 +10,6 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.logger import logger
 from src.models.document import Document
 
@@ -41,7 +40,9 @@ class DocumentRepository:
             logger.exception("Failed to fetch document", document_id=document_id)
             raise
 
-    async def get_by_hash(self, school_id: uuid.UUID, content_hash: str) -> Document | None:
+    async def get_by_hash(
+        self, school_id: uuid.UUID, content_hash: str
+    ) -> Document | None:
         """Find an existing document with the same school and hash."""
         try:
             result = await self.db.execute(

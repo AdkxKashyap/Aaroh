@@ -12,6 +12,7 @@ from src.db.transaction import transactional
 from src.enums.document_status import DocumentStatus
 from src.models.document import Document
 from src.models.document_version import DocumentVersion
+from src.models.user import User
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.document_version_repository import DocumentVersionRepository
 from src.services.document_state_machine import DocumentStateMachine
@@ -30,31 +31,31 @@ class DocumentService:
 
     async def create_document(
         self,
-        school_id: uuid.UUID,
         uploaded_by: uuid.UUID,
         document_type: str,
         content_hash: str,
         storage_key: str,
+        current_user: User,
     ) -> Document:
         logger.info(
             "Creating document",
-            school_id=school_id,
+            school_id=current_user.school_id,
             uploaded_by=uploaded_by,
             document_type=document_type,
             content_hash=content_hash,
         )
 
-        existing = await self.document_repository.get_by_hash(school_id, content_hash)
+        existing = await self.document_repository.get_by_hash(current_user.school_id, content_hash)
         if existing is not None:
             logger.warning(
                 "Duplicate document upload",
-                school_id=school_id,
+                school_id=current_user.school_id,
                 content_hash=content_hash,
             )
             raise ValueError("Duplicate document detected for this school.")
 
         document = Document(
-            school_id=school_id,
+            school_id=current_user.school_id,
             uploaded_by=uploaded_by,
             document_type=document_type,
             content_hash=content_hash,
@@ -82,7 +83,7 @@ class DocumentService:
         except Exception:
             logger.exception(
                 "Failed to create document",
-                school_id=school_id,
+                school_id=current_user.school_id,
                 content_hash=content_hash,
             )
             raise
@@ -113,7 +114,7 @@ class DocumentService:
         )
 
         try:
-            async with transactional(self.db):
+            async with transactional(self.document_repository.db):
                 version = await self.document_version_repository.create(version)
                 document.current_version = next_version
                 document = await self.document_repository.update(document)
@@ -134,6 +135,7 @@ class DocumentService:
 
     async def transition_status(
         self,
+        current_user: User,
         document_id: uuid.UUID,
         target_status: DocumentStatus,
     ) -> Document:
@@ -155,7 +157,7 @@ class DocumentService:
         document.status = target_status
 
         try:
-            async with transactional(self.db):
+            async with transactional(self.document_repository.db):
                 document = await self.document_repository.update(document)
 
                 logger.info(

@@ -10,7 +10,6 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.logger import logger
 from src.models.document_version import DocumentVersion
 
@@ -40,7 +39,9 @@ class DocumentVersionRepository:
             )
             return list(result.scalars().all())
         except SQLAlchemyError:
-            logger.exception("Failed to fetch document versions", document_id=document_id)
+            logger.exception(
+                "Failed to fetch document versions", document_id=document_id
+            )
             raise
 
     async def get_latest(self, document_id: uuid.UUID) -> DocumentVersion | None:
@@ -53,5 +54,7 @@ class DocumentVersionRepository:
             )
             return result.scalar_one_or_none()
         except SQLAlchemyError:
-            logger.exception("Failed to fetch latest document version", document_id=document_id)
+            logger.exception(
+                "Failed to fetch latest document version", document_id=document_id
+            )
             raise
