@@ -9,11 +9,11 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
-
 from src.config.settings import get_settings
 from src.models.base import Base
 
 # Import models so Alembic can discover them
+from src.models.guardian_links import GuardianLink
 from src.models.role import Role
 from src.models.user import User
 from src.models.user_role import UserRole

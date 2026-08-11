@@ -48,7 +48,7 @@ class StudentService:
         self.role_repository = role_repository
         self.class_repository = class_repository
 
-    async def create_student(
+    async def  create_student(
         self,
         current_user: User,
         username: str,

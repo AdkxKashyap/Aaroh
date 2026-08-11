@@ -2,6 +2,7 @@
 
 from .assignment import Assignment
 from .base import Base
+from .guardian_links import GuardianLink
 from .role import Role
 from .school import School
 from .school_class import SchoolClass
