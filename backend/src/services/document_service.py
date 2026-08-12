@@ -285,6 +285,30 @@ class DocumentService:
             )
             raise
 
+    async def prepare_for_parsing(
+        self,
+        document_id: uuid.UUID,
+        current_user: User | None = None,
+    ) -> str:
+        document = await self.document_repository.get_by_id(document_id)
+        if document is None:
+            raise ValueError("Document not found.")
+        if current_user is not None and document.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
+
+        latest_version = await self.document_version_repository.get_latest(document_id)
+        if latest_version is None:
+            raise ValueError("Document version not found.")
+
+        file_bytes = await self.storage.read(latest_version.storage_key)
+        if file_bytes is None:
+            raise ValueError("Document content could not be read.")
+
+        return ExtractionAdapter.prepare_parser_input(
+            file_bytes,
+            latest_version.storage_key,
+        )
+
     async def extract_text(
         self,
         document_id: uuid.UUID,

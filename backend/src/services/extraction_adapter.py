@@ -18,6 +18,17 @@ class ExtractionAdapter:
     _SUPPORTED_EXTENSIONS = _TEXT_EXTENSIONS | {".pdf"}
 
     @classmethod
+    def prepare_parser_input(
+        cls, file_bytes: bytes, filename: str | None = None
+    ) -> str:
+        """Return a normalized text payload intended for the parser boundary."""
+        extracted = cls.extract_text(file_bytes, filename)
+        normalized = re.sub(r"\s+", " ", extracted).strip()
+        if not normalized:
+            raise ValueError("Document content is empty or unreadable.")
+        return normalized
+
+    @classmethod
     def extract_text(cls, file_bytes: bytes, filename: str | None = None) -> str:
         if not file_bytes:
             raise ValueError("Document content is empty.")
