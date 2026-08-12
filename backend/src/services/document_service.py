@@ -22,6 +22,7 @@ from src.repositories.document_repository import DocumentRepository
 from src.repositories.document_version_repository import DocumentVersionRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.services.document_state_machine import DocumentStateMachine
+from src.services.extraction_adapter import ExtractionAdapter
 from src.services.storage import FileStorage, LocalFileStorage
 
 
@@ -284,6 +285,27 @@ class DocumentService:
             )
             raise
 
+    async def extract_text(
+        self,
+        document_id: uuid.UUID,
+        current_user: User | None = None,
+    ) -> str:
+        document = await self.document_repository.get_by_id(document_id)
+        if document is None:
+            raise ValueError("Document not found.")
+        if current_user is not None and document.school_id != current_user.school_id:
+            raise ValueError("Access denied to this document.")
+
+        latest_version = await self.document_version_repository.get_latest(document_id)
+        if latest_version is None:
+            raise ValueError("Document version not found.")
+
+        file_bytes = await self.storage.read(latest_version.storage_key)
+        if file_bytes is None:
+            raise ValueError("Document content could not be read.")
+
+        return ExtractionAdapter.extract_text(file_bytes, latest_version.storage_key)
+
     async def transition_status(
         self,
         document_id: uuid.UUID,
@@ -327,3 +349,10 @@ class DocumentService:
                 target_status=target_status,
             )
             raise
+
+    async def begin_parsing(self, document_id, current_user: User) -> Document:
+        return await self.transition_status(
+            document_id=document_id,
+            target_status=DocumentStatus.PARSING,
+            current_user=current_user,
+        )

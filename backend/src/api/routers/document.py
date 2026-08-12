@@ -114,3 +114,27 @@ async def get_document_versions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(ex),
         )
+
+
+@router.post(
+    "/{document_id}/parse",
+    response_model=DocumentResponse,
+)
+async def begin_document_parsing(
+    document_id: uuid.UUID,
+    current_user: Annotated[
+        User,
+        Depends(require_role(RoleName.ADMIN, RoleName.TEACHER)),
+    ],
+    document_service: Annotated[
+        DocumentService,
+        Depends(get_document_service),
+    ],
+):
+    try:
+        return await document_service.begin_parsing(document_id, current_user)
+    except ValueError as ex:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ex),
+        )
