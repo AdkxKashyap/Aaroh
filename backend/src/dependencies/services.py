@@ -244,11 +244,18 @@ def get_chat_workflow_service(
         AssignmentService,
         Depends(get_assignment_service),
     ],
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
 ) -> ChatWorkflowService:
     llm_provider = LLMClientFactory.create("ollama")
     return ChatWorkflowService(
         llm_provider,
-        tool_registry=ToolRegistry(assignment_service=assignment_service),
+        tool_registry=ToolRegistry(
+            assignment_service=assignment_service,
+            class_repository=class_repository,
+        ),
     )
 
 

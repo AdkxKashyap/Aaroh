@@ -50,6 +50,16 @@ class FakeAssignmentService:
         )
 
 
+class FakeClassRepository:
+    def __init__(self):
+        self.class_id = "123e4567-e89b-12d3-a456-426614174000"
+
+    async def get_by_name(self, school_id, name):
+        if school_id == "school-1" and name == "8A":
+            return SimpleNamespace(id=self.class_id)
+        return None
+
+
 class FakeProvider:
     async def classify_intent(
         self,
@@ -147,7 +157,10 @@ def test_chat_workflow_executes_only_after_approval():
     assignment_service = FakeAssignmentService()
     service = ChatWorkflowService(
         FakeProvider(),
-        tool_registry=ToolRegistry(assignment_service=assignment_service),
+        tool_registry=ToolRegistry(
+            assignment_service=assignment_service,
+            class_repository=FakeClassRepository(),
+        ),
     )
 
     response = asyncio.run(
@@ -160,7 +173,7 @@ def test_chat_workflow_executes_only_after_approval():
                     "title": "Science Lab",
                     "description": "Lab report due next week",
                     "due_date": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-                    "class_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "class_name": "8A",
                 },
             ),
         )
@@ -169,3 +182,29 @@ def test_chat_workflow_executes_only_after_approval():
     assert response.status == "executed"
     assert response.intent == "CREATE_ASSIGNMENT"
     assert assignment_service.calls[0]["title"] == "Science Lab"
+
+
+def test_assignment_tool_resolves_class_name_before_execution():
+    assignment_service = FakeAssignmentService()
+    registry = ToolRegistry(
+        assignment_service=assignment_service,
+        class_repository=FakeClassRepository(),
+    )
+
+    result = asyncio.run(
+        registry.dispatch(
+            "CREATE_ASSIGNMENT",
+            {
+                "title": "Science Lab",
+                "description": "Lab report due next week",
+                "due_date": (
+                    datetime.now(timezone.utc) + timedelta(days=7)
+                ).isoformat(),
+                "class_name": "8A",
+            },
+            current_user=StubUser(),
+        )
+    )
+
+    assert result["status"] == "executed"
+    assert assignment_service.calls[0]["class_id"] is not None

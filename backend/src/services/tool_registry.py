@@ -28,8 +28,38 @@ class BaseTool(ABC):
 class AssignmentTool(BaseTool):
     name = "AssignmentTool"
 
-    def __init__(self, assignment_service=None, **_: Any):
+    def __init__(self, assignment_service=None, class_repository=None, **_: Any):
         self.assignment_service = assignment_service
+        self.class_repository = class_repository
+
+    async def _resolve_class_id(self, payload: dict[str, Any], current_user: Any) -> str:
+        class_id_value = payload.get("class_id")
+        if class_id_value:
+            return str(class_id_value)
+
+        class_name = payload.get("class_name") or payload.get("target_class")
+        if not class_name:
+            raise ValueError("Class ID or class name is required for assignment creation.")
+
+        if self.class_repository is None:
+            raise ValueError("Class repository is not configured for assignment resolution.")
+        if current_user is None or getattr(current_user, "school_id", None) is None:
+            raise ValueError("Authenticated user context is required for class resolution.")
+
+        candidate_names = [str(class_name).strip()]
+        lowered = candidate_names[0].lower()
+        if lowered.startswith("class "):
+            candidate_names.append(candidate_names[0][6:].strip())
+
+        for candidate_name in candidate_names:
+            school_class = await self.class_repository.get_by_name(
+                current_user.school_id,
+                candidate_name,
+            )
+            if school_class is not None:
+                return str(school_class.id)
+
+        raise ValueError("Class could not be resolved for assignment creation.")
 
     async def execute(
         self,
@@ -53,12 +83,10 @@ class AssignmentTool(BaseTool):
             "instructions"
         )
         due_date_value = safe_payload.get("due_date")
-        class_id_value = safe_payload.get("class_id")
+        class_id_value = await self._resolve_class_id(safe_payload, current_user)
 
         if not title:
             raise ValueError("Assignment title is required.")
-        if not class_id_value:
-            raise ValueError("Class ID is required for assignment creation.")
         if not due_date_value:
             raise ValueError("Due date is required for assignment creation.")
 
@@ -195,10 +223,12 @@ class ToolRegistry:
         assignment_service=None,
         submission_service=None,
         roster_service=None,
+        class_repository=None,
     ):
         self.assignment_service = assignment_service
         self.submission_service = submission_service
         self.roster_service = roster_service
+        self.class_repository = class_repository
 
     def preview(self, intent: str, payload: dict[str, Any]) -> dict[str, Any]:
         normalized_intent = (intent or "").upper()
@@ -227,6 +257,7 @@ class ToolRegistry:
             assignment_service=self.assignment_service,
             submission_service=self.submission_service,
             roster_service=self.roster_service,
+            class_repository=self.class_repository,
         )
         result = await tool.execute(payload or {}, current_user=current_user)
 
