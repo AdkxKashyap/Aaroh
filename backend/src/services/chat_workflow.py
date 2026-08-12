@@ -3,6 +3,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from pydantic import ValidationError
+from src.core.logger import logger
+from src.enums.role import RoleName
 from src.schemas.chat import (
     ApprovalRequest,
     ChatRequest,
@@ -115,6 +118,38 @@ class ChatWorkflowService:
         self.roster_workflow = RosterChatWorkflow()
         self.submission_workflow = SubmissionChatWorkflow()
 
+    @staticmethod
+    def _role_names(current_user) -> set[str]:
+        names: set[str] = set()
+        for user_role in getattr(current_user, "roles", []) or []:
+            role_name = getattr(getattr(user_role, "role", None), "name", None)
+            if role_name:
+                names.add(role_name)
+        return names
+
+    def _ensure_intent_authorized(self, current_user, intent: str) -> None:
+        required_roles = {
+            "CREATE_ASSIGNMENT": {RoleName.TEACHER},
+            "ROSTER_IMPORT": {RoleName.ADMIN},
+            "SUBMIT_ASSIGNMENT": {RoleName.STUDENT},
+        }
+        expected = required_roles.get(intent)
+        if not expected:
+            return
+
+        role_names = self._role_names(current_user)
+        if role_names.intersection(expected):
+            return
+
+        logger.warning(
+            "Chat intent authorization failed",
+            user_id=getattr(current_user, "id", None),
+            school_id=getattr(current_user, "school_id", None),
+            intent=intent,
+            required_roles=list(expected),
+        )
+        raise PermissionError("Access denied.")
+
     async def _build_clarification_question(
         self,
         intent: str,
@@ -146,6 +181,11 @@ class ChatWorkflowService:
         if PromptInjectionGuard.contains_injection(
             message_text
         ) or PromptInjectionGuard.contains_injection(file_text):
+            logger.warning(
+                "Blocked unsafe chat request",
+                user_id=getattr(current_user, "id", None),
+                school_id=getattr(current_user, "school_id", None),
+            )
             return ChatResponse(
                 status="blocked",
                 intent="UNSAFE",
@@ -160,7 +200,26 @@ class ChatWorkflowService:
             sanitized_file_text,
             conversation_context=conversation_context,
         )
-        intent = IntentResult.model_validate(payload)
+        try:
+            intent = IntentResult.model_validate(payload)
+        except ValidationError as exc:
+            logger.exception(
+                "Invalid LLM output",
+                user_id=getattr(current_user, "id", None),
+                school_id=getattr(current_user, "school_id", None),
+            )
+            raise ValueError("AI model response was invalid.") from exc
+
+        logger.info(
+            "Chat intent classified",
+            user_id=getattr(current_user, "id", None),
+            school_id=getattr(current_user, "school_id", None),
+            intent=intent.intent,
+            conversation_id=(conversation_context or {}).get("conversation_id"),
+            workflow_state=(conversation_context or {}).get("status"),
+        )
+
+        self._ensure_intent_authorized(current_user, intent.intent)
 
         if intent.intent == "UNSAFE":
             return ChatResponse(
@@ -224,6 +283,11 @@ class ChatWorkflowService:
             approval_message = AssignmentApprovalGate.build_approval_message(
                 assignment_result.draft
             )
+            logger.info(
+                "Assignment proposal awaiting approval",
+                user_id=getattr(current_user, "id", None),
+                school_id=getattr(current_user, "school_id", None),
+            )
 
         if intent.intent == "ROSTER_IMPORT":
             roster_result = self.roster_workflow.build_draft(sanitized_file_text)
@@ -252,6 +316,11 @@ class ChatWorkflowService:
 
             approval_message = self.roster_workflow.build_approval_message(
                 roster_result
+            )
+            logger.info(
+                "Roster proposal awaiting approval",
+                user_id=getattr(current_user, "id", None),
+                school_id=getattr(current_user, "school_id", None),
             )
 
         if intent.intent == "SUBMIT_ASSIGNMENT":
@@ -365,6 +434,12 @@ class ChatWorkflowService:
         action_payload: dict[str, Any],
         message: str,
     ) -> ChatResponse:
+        logger.info(
+            "Executing chat action",
+            user_id=getattr(current_user, "id", None),
+            school_id=getattr(current_user, "school_id", None),
+            intent=intent,
+        )
         tool_result = await self.tool_registry.dispatch(
             intent,
             action_payload,

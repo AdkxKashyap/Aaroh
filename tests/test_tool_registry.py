@@ -15,6 +15,7 @@ class StubUser:
     def __init__(self):
         self.id = "teacher-1"
         self.school_id = "school-1"
+        self.roles = [SimpleNamespace(role=SimpleNamespace(name="TEACHER"))]
 
 
 class FakeAssignmentService:

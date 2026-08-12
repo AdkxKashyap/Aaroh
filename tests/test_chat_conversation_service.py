@@ -111,6 +111,24 @@ def test_get_or_create_rejects_other_user_conversation():
         assert "Access denied" in str(exc)
 
 
+def test_get_or_create_rejects_other_school_conversation():
+    repository = FakeConversationRepository()
+    service = ChatConversationService(repository)
+    user = StubUser()
+    conversation = FakeConversation(
+        user_id=user.id,
+        school_id=uuid.uuid4(),
+        status=ChatConversationStatus.NEW,
+    )
+    repository.conversations[conversation.id] = conversation
+
+    try:
+        asyncio.run(service.get_or_create(user, conversation.id))
+        assert False, "Expected school access denial"
+    except ValueError as exc:
+        assert "your school" in str(exc)
+
+
 def test_persist_result_updates_conversation_state():
     repository = FakeConversationRepository()
     service = ChatConversationService(repository)

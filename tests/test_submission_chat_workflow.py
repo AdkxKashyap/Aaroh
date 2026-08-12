@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "backend"))
 
@@ -51,7 +52,11 @@ def test_chat_workflow_requires_clarification_for_missing_submission_assignment(
 
     response = __import__("asyncio").run(
         service.process_message(
-            current_user=None,
+            current_user=SimpleNamespace(
+                id="student-1",
+                school_id="school-1",
+                roles=[SimpleNamespace(role=SimpleNamespace(name="STUDENT"))],
+            ),
             request=type(
                 "Request",
                 (),

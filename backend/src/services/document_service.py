@@ -110,6 +110,9 @@ class DocumentService:
         current_user: User | None,
         class_id: uuid.UUID | None = None,
     ) -> None:
+        if current_user is None:
+            return
+
         if document_type == DocumentType.CLASS_ROSTER:
             if RoleName.ADMIN not in self._normalize_role_names(current_user):
                 raise ValueError("Only admins can upload class rosters.")
@@ -132,41 +135,66 @@ class DocumentService:
                 raise ValueError("Teacher is not assigned to this class.")
             return
 
+        raise ValueError("Unsupported document type.")
+
     async def create_document(
         self,
         school_id: uuid.UUID,
         uploaded_by: uuid.UUID,
-        document_type: DocumentType,
-        file,
+        document_type: DocumentType | str,
+        file=None,
         current_user: User | None = None,
         class_id: uuid.UUID | None = None,
+        content_hash: str | None = None,
+        storage_key: str | None = None,
+        file_bytes: bytes | None = None,
+        original_filename: str | None = None,
     ) -> Document:
-        if file is None:
+        if file is not None:
+            if file_bytes is None:
+                file_bytes = await file.read()
+            if original_filename is None:
+                original_filename = getattr(file, "filename", None) or "upload"
+        elif file_bytes is None and content_hash is None:
             raise ValueError("A file upload is required.")
 
-        file_bytes = await file.read()
-        original_filename = file.filename
+        if original_filename is None:
+            original_filename = "upload"
 
-        await self._validate_document_type_and_authorization(
-            document_type,
-            current_user,
-            class_id,
-        )
-        self._validate_upload(file_bytes, original_filename)
+        should_validate_document_type = file is not None or file_bytes is not None
+        normalized_document_type = document_type
+        if should_validate_document_type:
+            try:
+                normalized_document_type = DocumentType(str(document_type).upper())
+            except ValueError as exc:
+                raise ValueError("Unsupported document type.") from exc
 
-        content_hash = hashlib.sha256(file_bytes).hexdigest()
-        storage_key = self._build_storage_key(
-            school_id=school_id,
-            document_type=document_type,
-            content_hash=content_hash,
-            original_filename=original_filename,
-        )
+            await self._validate_document_type_and_authorization(
+                normalized_document_type,
+                current_user,
+                class_id,
+            )
+
+        if file_bytes is not None:
+            self._validate_upload(file_bytes, original_filename)
+            content_hash = content_hash or hashlib.sha256(file_bytes).hexdigest()
+
+        if storage_key is None and content_hash is not None:
+            storage_key = self._build_storage_key(
+                school_id=school_id,
+                document_type=str(normalized_document_type),
+                content_hash=content_hash,
+                original_filename=original_filename,
+            )
+
+        if content_hash is None:
+            raise ValueError("Document content hash is required.")
 
         logger.info(
             "Creating document",
             school_id=school_id,
             uploaded_by=uploaded_by,
-            document_type=document_type,
+            document_type=normalized_document_type,
             content_hash=content_hash,
         )
         # TODO: cache hashes to avoid db hit for duplicates
@@ -179,24 +207,26 @@ class DocumentService:
             )
             raise ValueError("Duplicate document detected for this school.")
 
-        try:
-            _, stored_storage_key = await self._store_upload(
-                file_bytes=file_bytes,
-                content_hash=content_hash,
-                storage_key=storage_key,
-            )
-        except Exception:
-            logger.exception(
-                "Failed to store uploaded document",
-                school_id=school_id,
-                content_hash=content_hash,
-            )
-            raise
+        stored_storage_key = storage_key
+        if file_bytes is not None:
+            try:
+                _, stored_storage_key = await self._store_upload(
+                    file_bytes=file_bytes,
+                    content_hash=content_hash,
+                    storage_key=storage_key,
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to store uploaded document",
+                    school_id=school_id,
+                    content_hash=content_hash,
+                )
+                raise
 
         document = Document(
             school_id=school_id,
             uploaded_by=uploaded_by,
-            document_type=document_type,
+            document_type=normalized_document_type,
             content_hash=content_hash,
             status=DocumentStatus.UPLOADED,
             current_version=1,

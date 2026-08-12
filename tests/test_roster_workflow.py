@@ -56,7 +56,11 @@ def test_chat_workflow_uses_llm_question_for_missing_roster_credentials():
 
     response = asyncio.run(
         service.process_message(
-            current_user=SimpleNamespace(id="admin-1", school_id="school-1"),
+            current_user=SimpleNamespace(
+                id="admin-1",
+                school_id="school-1",
+                roles=[SimpleNamespace(role=SimpleNamespace(name="ADMIN"))],
+            ),
             request=SimpleNamespace(
                 message="Import this roster",
                 file_name="students.csv",
