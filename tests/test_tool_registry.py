@@ -67,6 +67,8 @@ class FakeProvider:
                     datetime.now(timezone.utc) + timedelta(days=7)
                 ).isoformat(),
                 "class_name": "8A",
+                "subject": "Science",
+                "instructions": "Write a lab summary.",
             },
             "missing_fields": [],
             "ambiguities": [],
@@ -80,6 +82,8 @@ class FakeProvider:
                     datetime.now(timezone.utc) + timedelta(days=7)
                 ).isoformat(),
                 "class_name": "8A",
+                "subject": "Science",
+                "instructions": "Write a lab summary.",
             },
         }
 

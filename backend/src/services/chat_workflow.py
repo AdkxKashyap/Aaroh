@@ -4,6 +4,10 @@ import re
 from typing import Any
 
 from src.schemas.chat import ApprovalRequest, ChatRequest, ChatResponse, IntentResult
+from src.services.assignment_chat_workflow import (
+    AssignmentApprovalGate,
+    AssignmentChatWorkflow,
+)
 from src.services.llm_provider import LLMProvider
 from src.services.tool_registry import ToolRegistry
 
@@ -98,6 +102,7 @@ class ChatWorkflowService:
     ):
         self.llm_provider = llm_provider
         self.tool_registry = tool_registry or ToolRegistry()
+        self.assignment_workflow = AssignmentChatWorkflow()
 
     async def process_message(
         self,
@@ -142,6 +147,53 @@ class ChatWorkflowService:
             )
 
         prepared_payload = intent.proposed_action or intent.extracted_data or {}
+        approval_message = "Please confirm this action before I execute it."
+
+        if intent.intent == "CREATE_ASSIGNMENT":
+            previous_payload = {}
+            if conversation_context:
+                previous_payload = (
+                    (conversation_context.get("workflow_data") or {}).get(
+                        "action_payload"
+                    )
+                    or {}
+                )
+
+            assignment_result = self.assignment_workflow.build_draft(
+                intent=intent,
+                previous_payload=previous_payload,
+                file_content=sanitized_file_text,
+            )
+            prepared_payload = assignment_result.proposed_action
+            clarification_questions = assignment_result.clarification_questions
+            if assignment_result.clarification_question:
+                clarification_questions = [
+                    assignment_result.clarification_question,
+                    *clarification_questions,
+                ]
+            clarification_questions = list(dict.fromkeys(clarification_questions))
+
+            if assignment_result.requires_clarification:
+                return ChatResponse(
+                    status="clarification_required",
+                    intent=intent.intent,
+                    message=assignment_result.clarification_question
+                    or "I need a few more details before I can proceed.",
+                    clarification_questions=clarification_questions
+                    or assignment_result.missing_fields,
+                    action_payload={
+                        "tool_result": self.tool_registry.preview(
+                            intent.intent,
+                            prepared_payload,
+                        ),
+                        **prepared_payload,
+                    },
+                )
+
+            approval_message = AssignmentApprovalGate.build_approval_message(
+                assignment_result.draft
+            )
+
         if intent.intent not in {"UNKNOWN", "UNSAFE"}:
             prepared_payload = {
                 "tool_result": self.tool_registry.preview(
@@ -169,7 +221,7 @@ class ChatWorkflowService:
         return ChatResponse(
             status="awaiting_approval",
             intent=intent.intent,
-            message="Please confirm this action before I execute it.",
+            message=approval_message,
             action_payload=prepared_payload,
             requires_approval=True,
         )
