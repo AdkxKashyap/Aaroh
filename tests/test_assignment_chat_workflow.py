@@ -44,5 +44,10 @@ def test_assignment_chat_workflow_preserves_llm_clarification_question():
     result = workflow.build_draft(intent=intent)
 
     assert result.requires_clarification is True
-    assert result.clarification_question == "Which class should receive this assignment?"
-    assert result.clarification_questions[0] == "Which class should receive this assignment?"
+    assert (
+        result.clarification_question == "Which class should receive this assignment?"
+    )
+    assert (
+        result.clarification_questions[0]
+        == "Which class should receive this assignment?"
+    )

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
-
 from src.schemas.chat import IntentResult
 
 

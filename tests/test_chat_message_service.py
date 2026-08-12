@@ -143,9 +143,9 @@ def test_chat_message_service_resumes_clarification_conversation():
     assert second_response.conversation_id == first_response.conversation_id
     assert second_response.status == "AWAITING_APPROVAL"
     assert workflow_service.calls[1]["status"] == "CLARIFICATION_REQUIRED"
-    assert (
-        workflow_service.calls[1]["workflow_data"]["missing_fields"] == ["class_name"]
-    )
+    assert workflow_service.calls[1]["workflow_data"]["missing_fields"] == [
+        "class_name"
+    ]
     assert (
         workflow_service.calls[1]["workflow_data"]["action_payload"]["title"]
         == "Fractions Project"
@@ -201,7 +201,9 @@ def test_chat_message_service_executes_only_on_approval_message_once():
     assert approval_response.message == "Assignment created successfully."
     assert workflow_service.approval_calls == 1
     assert repeated_approval_response.status == "COMPLETED"
-    assert repeated_approval_response.message == "This action has already been completed."
+    assert (
+        repeated_approval_response.message == "This action has already been completed."
+    )
     assert workflow_service.approval_calls == 1
 
 
@@ -211,7 +213,9 @@ def test_chat_message_service_executes_submission_without_approval():
     user = StubUser()
 
     class SubmissionWorkflowService(FakeWorkflowService):
-        async def process_message(self, current_user, request, conversation_context=None):
+        async def process_message(
+            self, current_user, request, conversation_context=None
+        ):
             return ChatResponse(
                 status="ready_to_execute",
                 intent="SUBMIT_ASSIGNMENT",

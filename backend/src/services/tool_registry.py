@@ -32,19 +32,27 @@ class AssignmentTool(BaseTool):
         self.assignment_service = assignment_service
         self.class_repository = class_repository
 
-    async def _resolve_class_id(self, payload: dict[str, Any], current_user: Any) -> str:
+    async def _resolve_class_id(
+        self, payload: dict[str, Any], current_user: Any
+    ) -> str:
         class_id_value = payload.get("class_id")
         if class_id_value:
             return str(class_id_value)
 
         class_name = payload.get("class_name") or payload.get("target_class")
         if not class_name:
-            raise ValueError("Class ID or class name is required for assignment creation.")
+            raise ValueError(
+                "Class ID or class name is required for assignment creation."
+            )
 
         if self.class_repository is None:
-            raise ValueError("Class repository is not configured for assignment resolution.")
+            raise ValueError(
+                "Class repository is not configured for assignment resolution."
+            )
         if current_user is None or getattr(current_user, "school_id", None) is None:
-            raise ValueError("Authenticated user context is required for class resolution.")
+            raise ValueError(
+                "Authenticated user context is required for class resolution."
+            )
 
         candidate_names = [str(class_name).strip()]
         lowered = candidate_names[0].lower()

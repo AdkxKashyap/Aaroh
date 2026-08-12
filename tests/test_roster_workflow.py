@@ -13,7 +13,9 @@ from src.services.tool_registry import ToolRegistry
 
 
 class FakeProvider:
-    async def classify_intent(self, message, file_content=None, conversation_context=None):
+    async def classify_intent(
+        self, message, file_content=None, conversation_context=None
+    ):
         return {
             "intent": "ROSTER_IMPORT",
             "confidence": 0.95,
@@ -27,7 +29,9 @@ class FakeProvider:
         }
 
     async def generate_json(self, prompt, response_model):
-        return response_model(question="Please re-upload the roster with username, email, and password columns for each student.")
+        return response_model(
+            question="Please re-upload the roster with username, email, and password columns for each student."
+        )
 
 
 class FakeRosterService:
@@ -36,7 +40,11 @@ class FakeRosterService:
 
     async def import_roster(self, current_user, rows, class_name=None, school_id=None):
         self.calls.append(rows)
-        return {"rows_processed": len(rows), "students_created": len(rows), "classes_created": 1}
+        return {
+            "rows_processed": len(rows),
+            "students_created": len(rows),
+            "classes_created": 1,
+        }
 
 
 def test_roster_parser_requires_credentials_columns():

@@ -34,7 +34,9 @@ class RosterImportService:
         created_students = 0
 
         for row in rows or []:
-            row_class_name = row.get("grade_class") or row.get("class_name") or class_name
+            row_class_name = (
+                row.get("grade_class") or row.get("class_name") or class_name
+            )
             if not row_class_name:
                 raise ValueError("Roster row is missing class information.")
 

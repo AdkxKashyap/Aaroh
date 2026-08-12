@@ -40,7 +40,9 @@ class RosterChatWorkflow:
             )
 
         parsed = RosterParser().parse(file_content)
-        rows = [RosterRowDraft.model_validate(row) for row in parsed.data.get("rows", [])]
+        rows = [
+            RosterRowDraft.model_validate(row) for row in parsed.data.get("rows", [])
+        ]
         return RosterImportDraft(
             rows=rows,
             missing_fields=list(parsed.missing_fields or []),

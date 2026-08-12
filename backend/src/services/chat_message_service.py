@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import uuid
 
+from src.enums.chat import ChatConversationStatus
 from src.schemas.chat import (
     ApprovalRequest,
     ChatMessageRequest,
     ChatMessageResponse,
     ChatRequest,
 )
-from src.enums.chat import ChatConversationStatus
 from src.services.chat_conversation_service import ChatConversationService
 from src.services.chat_workflow import ChatWorkflowService
 from src.services.extraction_adapter import ExtractionAdapter
@@ -75,9 +75,7 @@ class ChatMessageService:
                     response=workflow_response,
                     message=request.message,
                     file_name=(conversation.workflow_data or {}).get("file_name"),
-                    file_content=(conversation.workflow_data or {}).get(
-                        "file_content"
-                    ),
+                    file_content=(conversation.workflow_data or {}).get("file_content"),
                 )
                 return self._response_from_workflow(conversation, workflow_response)
 

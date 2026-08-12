@@ -129,8 +129,12 @@ class AssignmentChatWorkflow:
         self._merge_payload(combined_payload, intent.proposed_action)
 
         draft = AssignmentDraft.from_payload(combined_payload)
-        missing_fields = list(dict.fromkeys((intent.missing_fields or []) + draft.missing_fields()))
-        clarification_questions = AssignmentClarificationService.questions_from_intent(intent)
+        missing_fields = list(
+            dict.fromkeys((intent.missing_fields or []) + draft.missing_fields())
+        )
+        clarification_questions = AssignmentClarificationService.questions_from_intent(
+            intent
+        )
         clarification_question = intent.clarification_question
 
         return AssignmentWorkflowResult(

@@ -173,7 +173,9 @@ def test_chat_workflow_executes_only_after_approval():
                 action_payload={
                     "title": "Science Lab",
                     "description": "Lab report due next week",
-                    "due_date": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+                    "due_date": (
+                        datetime.now(timezone.utc) + timedelta(days=7)
+                    ).isoformat(),
                     "class_name": "8A",
                 },
             ),

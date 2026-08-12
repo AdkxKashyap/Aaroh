@@ -10,7 +10,9 @@ from src.services.submission_chat_workflow import SubmissionChatWorkflow
 
 
 class FakeProvider:
-    async def classify_intent(self, message, file_content=None, conversation_context=None):
+    async def classify_intent(
+        self, message, file_content=None, conversation_context=None
+    ):
         return {
             "intent": "SUBMIT_ASSIGNMENT",
             "confidence": 0.9,
