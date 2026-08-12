@@ -6,6 +6,7 @@ from typing import Any, TypeVar
 
 import httpx
 from pydantic import BaseModel
+from src.config.settings import get_settings
 from src.core.logger import logger
 from src.services.prompt_builder import IntentPromptBuilder
 

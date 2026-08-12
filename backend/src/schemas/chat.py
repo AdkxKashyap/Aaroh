@@ -34,6 +34,13 @@ class IntentResult(BaseModel):
     clarification_questions: list[str] = Field(default_factory=list)
 
 
+class ApprovalRequest(BaseModel):
+    intent: str
+    approved: bool = False
+    action_payload: dict[str, Any] = Field(default_factory=dict)
+    reason: str | None = None
+
+
 class ChatResponse(BaseModel):
     status: str
     intent: str | None = None

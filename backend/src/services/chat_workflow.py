@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 
-from src.schemas.chat import ChatRequest, ChatResponse, IntentResult
+from src.schemas.chat import ApprovalRequest, ChatRequest, ChatResponse, IntentResult
 from src.services.llm_provider import LLMProvider
+from src.services.tool_registry import ToolRegistry
 
 
 class PromptInjectionGuard:
@@ -89,8 +90,13 @@ class ChatWorkflowService:
     future tool registry.
     """
 
-    def __init__(self, llm_provider: LLMProvider):
+    def __init__(
+        self,
+        llm_provider: LLMProvider,
+        tool_registry: ToolRegistry | None = None,
+    ):
         self.llm_provider = llm_provider
+        self.tool_registry = tool_registry or ToolRegistry()
 
     async def process_message(
         self,
@@ -132,6 +138,16 @@ class ChatWorkflowService:
                 message="I can help with assignment creation, submission, or roster import.",
             )
 
+        prepared_payload = intent.extracted_data or {}
+        if intent.intent not in {"UNKNOWN", "UNSAFE"}:
+            prepared_payload = {
+                "tool_result": self.tool_registry.preview(
+                    intent.intent,
+                    intent.extracted_data,
+                ),
+                **(intent.extracted_data or {}),
+            }
+
         if intent.missing_fields:
             return ChatResponse(
                 status="clarification_required",
@@ -139,15 +155,42 @@ class ChatWorkflowService:
                 message="I need the following details before I can proceed.",
                 clarification_questions=intent.clarification_questions
                 or intent.missing_fields,
-                action_payload=intent.extracted_data,
+                action_payload=prepared_payload,
             )
 
         return ChatResponse(
             status="awaiting_approval",
             intent=intent.intent,
             message="Please confirm this action before I execute it.",
-            action_payload=intent.extracted_data,
+            action_payload=prepared_payload,
             requires_approval=True,
+        )
+
+    async def approve_action(
+        self,
+        current_user,
+        request: ApprovalRequest,
+    ) -> ChatResponse:
+        if not request.approved:
+            return ChatResponse(
+                status="rejected",
+                intent=request.intent,
+                message="The action was not approved, so nothing was executed.",
+                action_payload=request.action_payload,
+            )
+
+        tool_result = await self.tool_registry.dispatch(
+            request.intent,
+            request.action_payload,
+            current_user=current_user,
+        )
+
+        return ChatResponse(
+            status="executed",
+            intent=request.intent,
+            message="The approved action has been executed.",
+            action_payload={"tool_result": tool_result},
+            requires_approval=False,
         )
 
 
