@@ -33,6 +33,7 @@ class ChatMessageResponse(BaseModel):
     message: str
     intent: str | None = None
     proposed_action: dict[str, Any] = Field(default_factory=dict)
+    missing_fields: list[str] = Field(default_factory=list)
     clarification_question: str | None = None
     requires_approval: bool = False
     approval_data: dict[str, Any] = Field(default_factory=dict)
@@ -68,6 +69,7 @@ class ChatResponse(BaseModel):
     status: str
     intent: str | None = None
     message: str
+    missing_fields: list[str] = Field(default_factory=list)
     clarification_questions: list[str] = Field(default_factory=list)
     action_payload: dict[str, Any] | None = None
     requires_approval: bool = False

@@ -38,9 +38,9 @@ class ChatMessageService:
                 file_bytes, file.filename
             )
 
-        await self.conversation_service.mark_processing(conversation, request.message)
-
         conversation_context = self.conversation_service.build_context(conversation)
+
+        await self.conversation_service.mark_processing(conversation, request.message)
 
         workflow_response = await self.workflow_service.process_message(
             current_user=current_user,
@@ -67,6 +67,7 @@ class ChatMessageService:
             message=workflow_response.message,
             intent=workflow_response.intent,
             proposed_action=(workflow_response.action_payload or {}),
+            missing_fields=list(workflow_response.missing_fields or []),
             clarification_question=(
                 workflow_response.clarification_questions[0]
                 if workflow_response.clarification_questions

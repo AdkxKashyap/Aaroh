@@ -179,6 +179,7 @@ class ChatWorkflowService:
                     intent=intent.intent,
                     message=assignment_result.clarification_question
                     or "I need a few more details before I can proceed.",
+                    missing_fields=assignment_result.missing_fields,
                     clarification_questions=clarification_questions
                     or assignment_result.missing_fields,
                     action_payload={
@@ -213,6 +214,7 @@ class ChatWorkflowService:
                 intent=intent.intent,
                 message=intent.clarification_question
                 or "I need a few more details before I can proceed.",
+                missing_fields=list(intent.missing_fields or []),
                 clarification_questions=clarification_questions
                 or intent.missing_fields,
                 action_payload=prepared_payload,

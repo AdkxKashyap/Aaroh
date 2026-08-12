@@ -62,8 +62,11 @@ class ChatConversationService:
         conversation.status = self._map_response_status(response.status)
         conversation.workflow_data = {
             "action_payload": response.action_payload,
-            "clarification_questions": list(response.clarification_questions or []),
-            "requires_approval": response.requires_approval,
+            "missing_fields": list(getattr(response, "missing_fields", []) or []),
+            "clarification_questions": list(
+                getattr(response, "clarification_questions", []) or []
+            ),
+            "requires_approval": getattr(response, "requires_approval", False),
             "file_name": file_name,
             "file_content": file_content,
         }
