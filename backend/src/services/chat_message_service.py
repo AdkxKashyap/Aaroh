@@ -40,6 +40,8 @@ class ChatMessageService:
 
         await self.conversation_service.mark_processing(conversation, request.message)
 
+        conversation_context = self.conversation_service.build_context(conversation)
+
         workflow_response = await self.workflow_service.process_message(
             current_user=current_user,
             request=ChatRequest(
@@ -48,6 +50,7 @@ class ChatMessageService:
                 file_content=extracted_file_text,
                 session_id=str(conversation.id),
             ),
+            conversation_context=conversation_context,
         )
 
         conversation = await self.conversation_service.persist_result(

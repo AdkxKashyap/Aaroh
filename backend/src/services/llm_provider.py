@@ -26,6 +26,7 @@ class LLMProvider(ABC):
         self,
         message: str,
         file_content: str | None = None,
+        conversation_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -57,20 +58,31 @@ class OllamaProvider(LLMProvider):
         )
 
     async def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(
-                f"{self.base_url}/api/generate",
-                json=payload,
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                response = await client.post(
+                    f"{self.base_url}/api/generate",
+                    json=payload,
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPError as exc:
+            logger.exception("Ollama request failed")
+            raise ValueError(
+                "AI service is currently unavailable. Please try again."
+            ) from exc
 
     async def classify_intent(
         self,
         message: str,
         file_content: str | None = None,
+        conversation_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        prompt = IntentPromptBuilder.build_intent_prompt(message, file_content)
+        prompt = IntentPromptBuilder.build_intent_prompt(
+            message,
+            file_content,
+            conversation_context,
+        )
         payload = {
             "model": self.model,
             "stream": False,

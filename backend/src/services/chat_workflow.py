@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from src.schemas.chat import ApprovalRequest, ChatRequest, ChatResponse, IntentResult
 from src.services.llm_provider import LLMProvider
@@ -102,6 +103,7 @@ class ChatWorkflowService:
         self,
         current_user,
         request: ChatRequest,
+        conversation_context: dict[str, Any] | None = None,
     ) -> ChatResponse:
         message_text = request.message or ""
         file_text = request.file_content or ""
@@ -121,6 +123,7 @@ class ChatWorkflowService:
         payload = await self.llm_provider.classify_intent(
             sanitized_message,
             sanitized_file_text,
+            conversation_context=conversation_context,
         )
         intent = IntentResult.model_validate(payload)
 
@@ -138,22 +141,27 @@ class ChatWorkflowService:
                 message="I can help with assignment creation, submission, or roster import.",
             )
 
-        prepared_payload = intent.extracted_data or {}
+        prepared_payload = intent.proposed_action or intent.extracted_data or {}
         if intent.intent not in {"UNKNOWN", "UNSAFE"}:
             prepared_payload = {
                 "tool_result": self.tool_registry.preview(
                     intent.intent,
-                    intent.extracted_data,
+                    prepared_payload,
                 ),
-                **(intent.extracted_data or {}),
+                **prepared_payload,
             }
 
-        if intent.missing_fields:
+        clarification_questions = list(intent.clarification_questions or [])
+        if intent.clarification_question:
+            clarification_questions.insert(0, intent.clarification_question)
+
+        if intent.requires_clarification or intent.missing_fields or clarification_questions:
             return ChatResponse(
                 status="clarification_required",
                 intent=intent.intent,
-                message="I need the following details before I can proceed.",
-                clarification_questions=intent.clarification_questions
+                message=intent.clarification_question
+                or "I need a few more details before I can proceed.",
+                clarification_questions=clarification_questions
                 or intent.missing_fields,
                 action_payload=prepared_payload,
             )

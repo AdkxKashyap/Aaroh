@@ -51,7 +51,12 @@ class FakeAssignmentService:
 
 
 class FakeProvider:
-    async def classify_intent(self, message: str, file_content: str | None = None):
+    async def classify_intent(
+        self,
+        message: str,
+        file_content: str | None = None,
+        conversation_context=None,
+    ):
         return {
             "intent": "CREATE_ASSIGNMENT",
             "confidence": 0.9,
@@ -61,10 +66,21 @@ class FakeProvider:
                 "due_date": (
                     datetime.now(timezone.utc) + timedelta(days=7)
                 ).isoformat(),
-                "class_id": "123e4567-e89b-12d3-a456-426614174000",
+                "class_name": "8A",
             },
             "missing_fields": [],
+            "ambiguities": [],
+            "requires_clarification": False,
+            "clarification_question": None,
             "clarification_questions": [],
+            "proposed_action": {
+                "title": "Science Lab",
+                "description": "Lab report due next week",
+                "due_date": (
+                    datetime.now(timezone.utc) + timedelta(days=7)
+                ).isoformat(),
+                "class_name": "8A",
+            },
         }
 
 
@@ -119,6 +135,7 @@ def test_chat_workflow_requires_approval_before_execution():
     assert response.requires_approval is True
     assert response.action_payload is not None
     assert response.action_payload["tool_result"]["status"] == "ready"
+    assert response.action_payload["class_name"] == "8A"
     assert assignment_service.calls == []
 
 

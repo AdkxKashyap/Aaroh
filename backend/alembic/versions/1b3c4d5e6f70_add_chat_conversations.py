@@ -19,7 +19,7 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-CHAT_STATUS_ENUM = sa.Enum(
+CHAT_STATUS_ENUM = postgresql.ENUM(
     "NEW",
     "PROCESSING",
     "CLARIFICATION_REQUIRED",
@@ -30,6 +30,7 @@ CHAT_STATUS_ENUM = sa.Enum(
     "REJECTED",
     "FAILED",
     name="chatconversationstatus",
+    create_type=False,
 )
 
 

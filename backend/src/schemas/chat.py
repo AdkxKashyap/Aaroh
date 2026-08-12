@@ -50,7 +50,11 @@ class IntentResult(BaseModel):
     confidence: float = 0.0
     extracted_data: dict[str, Any] = Field(default_factory=dict)
     missing_fields: list[str] = Field(default_factory=list)
+    ambiguities: list[str] = Field(default_factory=list)
+    requires_clarification: bool = False
+    clarification_question: str | None = None
     clarification_questions: list[str] = Field(default_factory=list)
+    proposed_action: dict[str, Any] = Field(default_factory=dict)
 
 
 class ApprovalRequest(BaseModel):
