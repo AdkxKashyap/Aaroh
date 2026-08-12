@@ -15,6 +15,7 @@ configure_logging()
 
 from src.api.routers.assignment import router as assignment_router
 from src.api.routers.auth import router as auth_router
+from src.api.routers.chat import router as chat_router
 from src.api.routers.document import router as document_router
 from src.api.routers.guardian import router as guardian_router
 from src.api.routers.health import router as health_router
@@ -39,6 +40,7 @@ app = FastAPI(
 app.include_router(
     assignment_router,
 )
+app.include_router(chat_router)
 app.add_middleware(LoggingMiddleware)
 app.include_router(health_router)
 app.include_router(auth_router)

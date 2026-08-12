@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024
     ALLOWED_UPLOAD_EXTENSIONS: str = ".pdf,.docx,.xlsx,.xls"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2"
+    OLLAMA_TIMEOUT_SECONDS: float = 60.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
