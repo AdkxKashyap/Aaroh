@@ -7,6 +7,7 @@ service calls still happen in the existing business layer.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -17,6 +18,24 @@ class ChatRequest(BaseModel):
     file_name: str | None = None
     file_content: str | None = None
     session_id: str | None = None
+
+
+class ChatMessageRequest(BaseModel):
+    conversation_id: uuid.UUID | None = None
+    message: str | None = None
+    file_name: str | None = None
+    file_content: str | None = None
+
+
+class ChatMessageResponse(BaseModel):
+    conversation_id: uuid.UUID
+    status: str
+    message: str
+    intent: str | None = None
+    proposed_action: dict[str, Any] = Field(default_factory=dict)
+    clarification_question: str | None = None
+    requires_approval: bool = False
+    approval_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class IntentResult(BaseModel):

@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import Depends
 from src.dependencies.database import DbSession
 from src.repositories.assignment_repository import AssignmentRepository
+from src.repositories.chat_conversation_repository import ChatConversationRepository
 from src.repositories.document_repository import DocumentRepository
 from src.repositories.document_version_repository import DocumentVersionRepository
 from src.repositories.guardian_link_repository import GuardianLinkRepository
@@ -29,8 +30,12 @@ from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.assignment_service import AssignmentService
 from src.services.auth_service import AuthService
+from src.services.chat_conversation_service import ChatConversationService
+from src.services.chat_message_service import ChatMessageService
+from src.services.chat_workflow import ChatWorkflowService
 from src.services.document_service import DocumentService
 from src.services.guardian_service import GuardianService
+from src.services.llm_provider import LLMClientFactory
 from src.services.role_service import RoleService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
@@ -38,6 +43,7 @@ from src.services.storage import LocalFileStorage
 from src.services.student_service import StudentService
 from src.services.submission_service import SubmissionService
 from src.services.teacher_service import TeacherService
+from src.services.tool_registry import ToolRegistry
 from src.services.user_service import UserService
 
 
@@ -215,6 +221,50 @@ def get_assignment_service(
         assignment_repository=assignment_repository,
         class_repository=class_repository,
         teacher_class_repository=teacher_class_repository,
+    )
+
+
+def get_chat_conversation_repository(
+    db: DbSession,
+) -> ChatConversationRepository:
+    return ChatConversationRepository(db)
+
+
+def get_chat_conversation_service(
+    repository: Annotated[
+        ChatConversationRepository,
+        Depends(get_chat_conversation_repository),
+    ],
+) -> ChatConversationService:
+    return ChatConversationService(repository)
+
+
+def get_chat_workflow_service(
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+) -> ChatWorkflowService:
+    llm_provider = LLMClientFactory.create("ollama")
+    return ChatWorkflowService(
+        llm_provider,
+        tool_registry=ToolRegistry(assignment_service=assignment_service),
+    )
+
+
+def get_chat_message_service(
+    workflow_service: Annotated[
+        ChatWorkflowService,
+        Depends(get_chat_workflow_service),
+    ],
+    conversation_service: Annotated[
+        ChatConversationService,
+        Depends(get_chat_conversation_service),
+    ],
+) -> ChatMessageService:
+    return ChatMessageService(
+        workflow_service=workflow_service,
+        conversation_service=conversation_service,
     )
 
 

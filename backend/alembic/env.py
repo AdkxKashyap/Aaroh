@@ -13,6 +13,7 @@ from src.config.settings import get_settings
 from src.models.base import Base
 
 # Import models so Alembic can discover them
+from src.models.chat_conversation import ChatConversation
 from src.models.document import Document
 from src.models.document_version import DocumentVersion
 from src.models.guardian_links import GuardianLink
