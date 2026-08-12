@@ -124,6 +124,14 @@ class ChatMessageService:
             conversation_context=conversation_context,
         )
 
+        if workflow_response.status == "ready_to_execute":
+            workflow_response = await self.workflow_service.execute_action(
+                current_user=current_user,
+                intent=workflow_response.intent or "UNKNOWN",
+                action_payload=workflow_response.action_payload or {},
+                message="Assignment submitted successfully.",
+            )
+
         conversation = await self.conversation_service.persist_result(
             conversation=conversation,
             response=workflow_response,

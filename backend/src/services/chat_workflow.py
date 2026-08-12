@@ -17,6 +17,7 @@ from src.services.assignment_chat_workflow import (
 from src.services.llm_provider import LLMProvider
 from src.services.prompt_builder import ClarificationPromptBuilder
 from src.services.roster_chat_workflow import RosterChatWorkflow
+from src.services.submission_chat_workflow import SubmissionChatWorkflow
 from src.services.tool_registry import ToolRegistry
 
 
@@ -112,6 +113,7 @@ class ChatWorkflowService:
         self.tool_registry = tool_registry or ToolRegistry()
         self.assignment_workflow = AssignmentChatWorkflow()
         self.roster_workflow = RosterChatWorkflow()
+        self.submission_workflow = SubmissionChatWorkflow()
 
     async def _build_clarification_question(
         self,
@@ -252,6 +254,57 @@ class ChatWorkflowService:
                 roster_result
             )
 
+        if intent.intent == "SUBMIT_ASSIGNMENT":
+            previous_payload = {}
+            if conversation_context:
+                previous_payload = (
+                    (conversation_context.get("workflow_data") or {}).get(
+                        "action_payload"
+                    )
+                    or {}
+                )
+
+            submission_draft = self.submission_workflow.build_draft(
+                intent=intent,
+                previous_payload=previous_payload,
+            )
+            prepared_payload = submission_draft.to_payload()
+            clarification_questions = list(intent.clarification_questions or [])
+            if intent.clarification_question:
+                clarification_questions.insert(0, intent.clarification_question)
+
+            if submission_draft.missing_fields():
+                return ChatResponse(
+                    status="clarification_required",
+                    intent=intent.intent,
+                    message=intent.clarification_question
+                    or "Which assignment would you like to submit?",
+                    missing_fields=submission_draft.missing_fields(),
+                    clarification_questions=clarification_questions
+                    or submission_draft.missing_fields(),
+                    action_payload={
+                        "tool_result": self.tool_registry.preview(
+                            intent.intent,
+                            prepared_payload,
+                        ),
+                        **prepared_payload,
+                    },
+                )
+
+            return ChatResponse(
+                status="ready_to_execute",
+                intent=intent.intent,
+                message="I have enough information to submit this assignment.",
+                action_payload={
+                    "tool_result": self.tool_registry.preview(
+                        intent.intent,
+                        prepared_payload,
+                    ),
+                    **prepared_payload,
+                },
+                requires_approval=False,
+            )
+
         if intent.intent not in {"UNKNOWN", "UNSAFE"}:
             prepared_payload = {
                 "tool_result": self.tool_registry.preview(
@@ -298,16 +351,30 @@ class ChatWorkflowService:
                 action_payload=request.action_payload,
             )
 
+        return await self.execute_action(
+            current_user=current_user,
+            intent=request.intent,
+            action_payload=request.action_payload,
+            message="The approved action has been executed.",
+        )
+
+    async def execute_action(
+        self,
+        current_user,
+        intent: str,
+        action_payload: dict[str, Any],
+        message: str,
+    ) -> ChatResponse:
         tool_result = await self.tool_registry.dispatch(
-            request.intent,
-            request.action_payload,
+            intent,
+            action_payload,
             current_user=current_user,
         )
 
         return ChatResponse(
             status="executed",
-            intent=request.intent,
-            message="The approved action has been executed.",
+            intent=intent,
+            message=message,
             action_payload={"tool_result": tool_result},
             requires_approval=False,
         )

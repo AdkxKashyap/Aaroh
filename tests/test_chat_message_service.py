@@ -104,6 +104,15 @@ class FakeWorkflowService:
             requires_approval=False,
         )
 
+    async def execute_action(self, current_user, intent, action_payload, message):
+        return ChatResponse(
+            status="executed",
+            intent=intent,
+            message=message,
+            action_payload={"tool_result": {"status": "executed"}},
+            requires_approval=False,
+        )
+
 
 def test_chat_message_service_resumes_clarification_conversation():
     repository = FakeConversationRepository()
@@ -194,3 +203,33 @@ def test_chat_message_service_executes_only_on_approval_message_once():
     assert repeated_approval_response.status == "COMPLETED"
     assert repeated_approval_response.message == "This action has already been completed."
     assert workflow_service.approval_calls == 1
+
+
+def test_chat_message_service_executes_submission_without_approval():
+    repository = FakeConversationRepository()
+    conversation_service = ChatConversationService(repository)
+    user = StubUser()
+
+    class SubmissionWorkflowService(FakeWorkflowService):
+        async def process_message(self, current_user, request, conversation_context=None):
+            return ChatResponse(
+                status="ready_to_execute",
+                intent="SUBMIT_ASSIGNMENT",
+                message="I have enough information to submit this assignment.",
+                action_payload={"assignment_id": "123"},
+                requires_approval=False,
+            )
+
+    workflow_service = SubmissionWorkflowService()
+    message_service = ChatMessageService(workflow_service, conversation_service)
+
+    response = asyncio.run(
+        message_service.handle_message(
+            user,
+            ChatMessageRequest(message="I completed assignment 123"),
+        )
+    )
+
+    assert response.status == "COMPLETED"
+    assert response.intent == "SUBMIT_ASSIGNMENT"
+    assert response.message == "Assignment submitted successfully."
