@@ -65,6 +65,7 @@ class StubUser:
 class FakeWorkflowService:
     def __init__(self):
         self.calls = []
+        self.approval_calls = 0
 
     async def process_message(self, current_user, request, conversation_context=None):
         self.calls.append(conversation_context)
@@ -91,6 +92,16 @@ class FakeWorkflowService:
                 "due_date": "2026-08-20",
             },
             requires_approval=True,
+        )
+
+    async def approve_action(self, current_user, request):
+        self.approval_calls += 1
+        return ChatResponse(
+            status="executed",
+            intent=request.intent,
+            message="Assignment created successfully.",
+            action_payload={"tool_result": {"status": "executed"}},
+            requires_approval=False,
         )
 
 
@@ -130,3 +141,56 @@ def test_chat_message_service_resumes_clarification_conversation():
         workflow_service.calls[1]["workflow_data"]["action_payload"]["title"]
         == "Fractions Project"
     )
+
+
+def test_chat_message_service_executes_only_on_approval_message_once():
+    repository = FakeConversationRepository()
+    conversation_service = ChatConversationService(repository)
+    workflow_service = FakeWorkflowService()
+    message_service = ChatMessageService(workflow_service, conversation_service)
+    user = StubUser()
+
+    first_response = asyncio.run(
+        message_service.handle_message(
+            user,
+            ChatMessageRequest(message="Create an assignment"),
+        )
+    )
+
+    second_response = asyncio.run(
+        message_service.handle_message(
+            user,
+            ChatMessageRequest(
+                conversation_id=first_response.conversation_id,
+                message="Class 8A",
+            ),
+        )
+    )
+
+    approval_response = asyncio.run(
+        message_service.handle_message(
+            user,
+            ChatMessageRequest(
+                conversation_id=first_response.conversation_id,
+                message="Approve",
+            ),
+        )
+    )
+
+    repeated_approval_response = asyncio.run(
+        message_service.handle_message(
+            user,
+            ChatMessageRequest(
+                conversation_id=first_response.conversation_id,
+                message="Approve",
+            ),
+        )
+    )
+
+    assert second_response.status == "AWAITING_APPROVAL"
+    assert approval_response.status == "COMPLETED"
+    assert approval_response.message == "Assignment created successfully."
+    assert workflow_service.approval_calls == 1
+    assert repeated_approval_response.status == "COMPLETED"
+    assert repeated_approval_response.message == "This action has already been completed."
+    assert workflow_service.approval_calls == 1
