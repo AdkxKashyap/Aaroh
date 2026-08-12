@@ -39,6 +39,10 @@ class ChatMessageResponse(BaseModel):
     approval_data: dict[str, Any] = Field(default_factory=dict)
 
 
+class ClarificationQuestionResult(BaseModel):
+    question: str
+
+
 class IntentResult(BaseModel):
     intent: Literal[
         "CREATE_ASSIGNMENT",

@@ -38,7 +38,12 @@ def test_assignment_brief_parser_extracts_required_fields():
 
 
 def test_roster_parser_detects_duplicate_rows():
-    content = "Name,Class\nAva,7A\nAva,7A\nMilo,7A"
+    content = (
+        "Name,Username,Email,Password,Class\n"
+        "Ava,ava,ava@example.com,secret,7A\n"
+        "Ava,ava2,ava2@example.com,secret,7A\n"
+        "Milo,milo,milo@example.com,secret,7A"
+    )
 
     parsed = RosterParser().parse(content)
 
@@ -56,6 +61,9 @@ def test_roster_parser_normalizes_alias_headers_and_marks_missing_required_field
     assert parsed.data["rows"][0]["name"] == "Ava"
     assert parsed.data["rows"][0]["parent_contact"] == "555-0101"
     assert "class" in parsed.missing_fields
+    assert "username" in parsed.missing_fields
+    assert "email" in parsed.missing_fields
+    assert "password" in parsed.missing_fields
     assert any(
         "Missing required roster columns" in message for message in parsed.ambiguities
     )

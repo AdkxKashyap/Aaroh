@@ -140,6 +140,9 @@ class RosterParser(DocumentParser):
 
     _HEADER_ALIASES = {
         "name": {"name", "student", "student_name", "full_name", "student name"},
+        "username": {"username", "user_name", "login", "student_username"},
+        "email": {"email", "email_address", "student_email"},
+        "password": {"password", "pass", "temporary_password", "student_password"},
         "class": {
             "class",
             "class_name",
@@ -204,7 +207,7 @@ class RosterParser(DocumentParser):
             if field_name is not None:
                 header_map[field_name] = index
 
-        required_fields = ["name", "class"]
+        required_fields = ["name", "class", "username", "email", "password"]
         missing_fields = [
             field_name for field_name in required_fields if field_name not in header_map
         ]
@@ -219,6 +222,9 @@ class RosterParser(DocumentParser):
 
             payload = {
                 "name": "",
+                "username": "",
+                "email": "",
+                "password": "",
                 "grade_class": "",
                 "parent_contact": "",
                 "notes": "",
@@ -230,6 +236,12 @@ class RosterParser(DocumentParser):
                 value = row[column_index].strip()
                 if field_name == "name":
                     payload["name"] = value
+                elif field_name == "username":
+                    payload["username"] = value
+                elif field_name == "email":
+                    payload["email"] = value
+                elif field_name == "password":
+                    payload["password"] = value
                 elif field_name == "class":
                     payload["grade_class"] = value
                 elif field_name == "parent_contact":
@@ -241,6 +253,12 @@ class RosterParser(DocumentParser):
                 ambiguities.append(f"Missing student name on row {row_index}.")
             if not payload["grade_class"]:
                 ambiguities.append(f"Missing class/grade on row {row_index}.")
+            if not payload["username"]:
+                ambiguities.append(f"Missing username on row {row_index}.")
+            if not payload["email"]:
+                ambiguities.append(f"Missing email on row {row_index}.")
+            if not payload["password"]:
+                ambiguities.append(f"Missing password on row {row_index}.")
 
             composite_key = (
                 payload["name"].strip().lower(),

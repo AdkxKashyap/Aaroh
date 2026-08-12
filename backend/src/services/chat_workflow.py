@@ -3,12 +3,20 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from src.schemas.chat import ApprovalRequest, ChatRequest, ChatResponse, IntentResult
+from src.schemas.chat import (
+    ApprovalRequest,
+    ChatRequest,
+    ChatResponse,
+    ClarificationQuestionResult,
+    IntentResult,
+)
 from src.services.assignment_chat_workflow import (
     AssignmentApprovalGate,
     AssignmentChatWorkflow,
 )
 from src.services.llm_provider import LLMProvider
+from src.services.prompt_builder import ClarificationPromptBuilder
+from src.services.roster_chat_workflow import RosterChatWorkflow
 from src.services.tool_registry import ToolRegistry
 
 
@@ -103,6 +111,26 @@ class ChatWorkflowService:
         self.llm_provider = llm_provider
         self.tool_registry = tool_registry or ToolRegistry()
         self.assignment_workflow = AssignmentChatWorkflow()
+        self.roster_workflow = RosterChatWorkflow()
+
+    async def _build_clarification_question(
+        self,
+        intent: str,
+        missing_fields: list[str],
+        ambiguities: list[str],
+        structured_data: dict[str, Any],
+    ) -> str:
+        prompt = ClarificationPromptBuilder.build_clarification_prompt(
+            intent=intent,
+            missing_fields=missing_fields,
+            ambiguities=ambiguities,
+            structured_data=structured_data,
+        )
+        result = await self.llm_provider.generate_json(
+            prompt,
+            ClarificationQuestionResult,
+        )
+        return result.question
 
     async def process_message(
         self,
@@ -193,6 +221,35 @@ class ChatWorkflowService:
 
             approval_message = AssignmentApprovalGate.build_approval_message(
                 assignment_result.draft
+            )
+
+        if intent.intent == "ROSTER_IMPORT":
+            roster_result = self.roster_workflow.build_draft(sanitized_file_text)
+            prepared_payload = roster_result.to_payload()
+            if roster_result.missing_fields or roster_result.ambiguities:
+                question = await self._build_clarification_question(
+                    intent=intent.intent,
+                    missing_fields=roster_result.missing_fields,
+                    ambiguities=roster_result.ambiguities,
+                    structured_data=prepared_payload,
+                )
+                return ChatResponse(
+                    status="clarification_required",
+                    intent=intent.intent,
+                    message=question,
+                    missing_fields=roster_result.missing_fields,
+                    clarification_questions=[question],
+                    action_payload={
+                        "tool_result": self.tool_registry.preview(
+                            intent.intent,
+                            prepared_payload,
+                        ),
+                        **prepared_payload,
+                    },
+                )
+
+            approval_message = self.roster_workflow.build_approval_message(
+                roster_result
             )
 
         if intent.intent not in {"UNKNOWN", "UNSAFE"}:

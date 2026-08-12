@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import re
+from io import BytesIO
 from pathlib import Path
+
+from openpyxl import load_workbook
 
 
 class ExtractionAdapter:
@@ -15,7 +18,7 @@ class ExtractionAdapter:
     """
 
     _TEXT_EXTENSIONS = {".txt", ".md", ".csv", ".json"}
-    _SUPPORTED_EXTENSIONS = _TEXT_EXTENSIONS | {".pdf"}
+    _SUPPORTED_EXTENSIONS = _TEXT_EXTENSIONS | {".pdf", ".xlsx"}
 
     @classmethod
     def prepare_parser_input(
@@ -40,6 +43,9 @@ class ExtractionAdapter:
 
         if suffix == ".pdf":
             return cls._extract_pdf_text(file_bytes)
+
+        if suffix == ".xlsx":
+            return cls._extract_xlsx_text(file_bytes)
 
         raise ValueError(f"Unsupported document type: {suffix or 'unknown'}")
 
@@ -74,3 +80,18 @@ class ExtractionAdapter:
             return cleaned
 
         raise ValueError("PDF content could not be extracted.")
+
+    @staticmethod
+    def _extract_xlsx_text(file_bytes: bytes) -> str:
+        workbook = load_workbook(filename=BytesIO(file_bytes), read_only=True)
+        lines: list[str] = []
+        for sheet in workbook.worksheets:
+            for row in sheet.iter_rows(values_only=True):
+                values = ["" if cell is None else str(cell).strip() for cell in row]
+                if any(values):
+                    lines.append(",".join(values))
+
+        text = "\n".join(lines).strip()
+        if not text:
+            raise ValueError("Spreadsheet content is empty or unreadable.")
+        return text

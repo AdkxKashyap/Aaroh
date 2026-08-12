@@ -37,6 +37,7 @@ from src.services.document_service import DocumentService
 from src.services.guardian_service import GuardianService
 from src.services.llm_provider import LLMClientFactory
 from src.services.role_service import RoleService
+from src.services.roster_import_service import RosterImportService
 from src.services.school_class_service import SchoolClassService
 from src.services.school_service import SchoolService
 from src.services.storage import LocalFileStorage
@@ -239,42 +240,6 @@ def get_chat_conversation_service(
     return ChatConversationService(repository)
 
 
-def get_chat_workflow_service(
-    assignment_service: Annotated[
-        AssignmentService,
-        Depends(get_assignment_service),
-    ],
-    class_repository: Annotated[
-        SchoolClassRepository,
-        Depends(get_school_class_repository),
-    ],
-) -> ChatWorkflowService:
-    llm_provider = LLMClientFactory.create("ollama")
-    return ChatWorkflowService(
-        llm_provider,
-        tool_registry=ToolRegistry(
-            assignment_service=assignment_service,
-            class_repository=class_repository,
-        ),
-    )
-
-
-def get_chat_message_service(
-    workflow_service: Annotated[
-        ChatWorkflowService,
-        Depends(get_chat_workflow_service),
-    ],
-    conversation_service: Annotated[
-        ChatConversationService,
-        Depends(get_chat_conversation_service),
-    ],
-) -> ChatMessageService:
-    return ChatMessageService(
-        workflow_service=workflow_service,
-        conversation_service=conversation_service,
-    )
-
-
 def get_student_repository(
     db: DbSession,
 ) -> StudentRepository:
@@ -312,6 +277,27 @@ def get_student_service(
     )
 
 
+def get_roster_import_service(
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
+    class_service: Annotated[
+        SchoolClassService,
+        Depends(get_school_class_service),
+    ],
+    student_service: Annotated[
+        StudentService,
+        Depends(get_student_service),
+    ],
+) -> RosterImportService:
+    return RosterImportService(
+        class_repository=class_repository,
+        class_service=class_service,
+        student_service=student_service,
+    )
+
+
 def get_submission_repository(
     db: DbSession,
 ) -> SubmissionRepository:
@@ -339,6 +325,52 @@ def get_submission_service(
         student_repository=student_repository,
         assignment_repository=assignment_repository,
         db=db,
+    )
+
+
+def get_chat_workflow_service(
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+    class_repository: Annotated[
+        SchoolClassRepository,
+        Depends(get_school_class_repository),
+    ],
+    roster_service: Annotated[
+        RosterImportService,
+        Depends(get_roster_import_service),
+    ],
+    submission_service: Annotated[
+        SubmissionService,
+        Depends(get_submission_service),
+    ],
+) -> ChatWorkflowService:
+    llm_provider = LLMClientFactory.create("ollama")
+    return ChatWorkflowService(
+        llm_provider,
+        tool_registry=ToolRegistry(
+            assignment_service=assignment_service,
+            submission_service=submission_service,
+            roster_service=roster_service,
+            class_repository=class_repository,
+        ),
+    )
+
+
+def get_chat_message_service(
+    workflow_service: Annotated[
+        ChatWorkflowService,
+        Depends(get_chat_workflow_service),
+    ],
+    conversation_service: Annotated[
+        ChatConversationService,
+        Depends(get_chat_conversation_service),
+    ],
+) -> ChatMessageService:
+    return ChatMessageService(
+        workflow_service=workflow_service,
+        conversation_service=conversation_service,
     )
 
 
