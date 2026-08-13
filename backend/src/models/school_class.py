@@ -38,6 +38,12 @@ class SchoolClass(BaseModel):
         nullable=False,
     )
 
+    normalized_name: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+        index=True,
+    )
+
     school_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("schools.id"),
         nullable=False,

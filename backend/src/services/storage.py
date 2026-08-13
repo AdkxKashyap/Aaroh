@@ -21,6 +21,10 @@ class FileStorage(ABC):
         """Persist bytes and return the storage identifier/path."""
 
     @abstractmethod
+    async def read(self, storage_key: str) -> bytes:
+        """Read a stored file and return its raw bytes."""
+
+    @abstractmethod
     async def delete(self, storage_key: str) -> None:
         """Remove an uploaded file from storage."""
 
@@ -40,6 +44,10 @@ class LocalFileStorage(FileStorage):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(file_bytes)
         return str(destination.relative_to(self.base_dir))
+
+    async def read(self, storage_key: str) -> bytes:
+        destination = self.base_dir / storage_key
+        return destination.read_bytes()
 
     async def delete(self, storage_key: str) -> None:
         destination = self.base_dir / storage_key

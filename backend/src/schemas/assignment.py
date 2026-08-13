@@ -6,9 +6,9 @@ Responsibility:
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from src.enums.assignment import AssignmentStatus
 
 
@@ -16,7 +16,20 @@ class CreateAssignmentRequest(BaseModel):
     title: str
     description: str
     due_date: datetime
-    class_id: uuid.UUID
+    class_id: uuid.UUID | None = None
+    class_name: str | None = None
+
+    @model_validator(mode="after")
+    def validate_class_reference(self):
+        if self.class_id is None and not self.class_name:
+            raise ValueError("Either class_id or class_name is required.")
+
+        if self.due_date.tzinfo is None:
+            self.due_date = self.due_date.replace(tzinfo=timezone.utc)
+        else:
+            self.due_date = self.due_date.astimezone(timezone.utc)
+
+        return self
 
 
 class AssignmentResponse(BaseModel):
@@ -33,3 +46,29 @@ class AssignmentResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class CreateAssignmentRequestWithClassName(BaseModel):
+    title: str
+    description: str
+    due_date: datetime
+    class_name: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def accept_payload_variants(cls, value):
+        if (
+            isinstance(value, dict)
+            and "assignment_data" in value
+            and isinstance(value["assignment_data"], dict)
+        ):
+            return value["assignment_data"]
+        return value
+
+    @model_validator(mode="after")
+    def normalize_due_date_to_utc(self):
+        if self.due_date.tzinfo is None:
+            self.due_date = self.due_date.replace(tzinfo=timezone.utc)
+        else:
+            self.due_date = self.due_date.astimezone(timezone.utc)
+        return self

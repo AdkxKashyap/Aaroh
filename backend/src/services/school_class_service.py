@@ -14,6 +14,7 @@ from src.models.user import User
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.school_repository import SchoolRepository
 from src.schemas.school_class import SchoolClassResponse
+from src.utils.class_name import normalize_class_name
 
 
 class SchoolClassService:
@@ -59,9 +60,12 @@ class SchoolClassService:
             class_name=name,
         )
 
+        normalized_name = normalize_class_name(name)
+
         school_class = SchoolClass(
             school_id=current_user.school_id,
             name=name,
+            normalized_name=normalized_name,
         )
 
         async with transactional(self.class_repository.db):

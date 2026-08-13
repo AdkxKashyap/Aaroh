@@ -52,7 +52,8 @@ async def create_assignment(
             title=request.title,
             description=request.description,
             due_date=request.due_date,
-            class_id=request.class_id,
+            class_id=request.class_id or None,
+            class_name=request.class_name or None,
         )
 
     except ValueError as ex:

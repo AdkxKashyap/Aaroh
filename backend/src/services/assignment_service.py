@@ -10,6 +10,7 @@ from src.repositories.assignment_repository import AssignmentRepository
 from src.repositories.school_class_repository import SchoolClassRepository
 from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.schemas.assignment import AssignmentResponse
+from src.utils.class_name import normalize_class_name
 
 """
 Assignment Service
@@ -74,27 +75,38 @@ class AssignmentService:
         title: str,
         description: str,
         due_date: datetime,
-        class_id: uuid.UUID,
+        class_id: uuid.UUID | None = None,
+        class_name: str | None = None,
     ) -> AssignmentResponse:
         """
         Creates an assignment.
         """
+
+        if class_id is None:
+            if not class_name:
+                raise ValueError("Class ID or class name is required.")
+
+            normalized_name = normalize_class_name(class_name)
+            school_class = await self.class_repository.get_by_name(
+                current_user.school_id,
+                normalized_name,
+            )
+            if school_class is None:
+                raise ValueError("Class not found.")
+            class_id = school_class.id
+        else:
+            school_class = await self.class_repository.get_by_id(class_id)
+            if school_class is None:
+                raise ValueError("Class not found.")
+
+        if school_class.school_id != current_user.school_id:
+            raise ValueError("Class does not belong to your school.")
 
         logger.info(
             "Creating assignment",
             teacher_id=current_user.id,
             class_id=class_id,
         )
-
-        school_class = await self.class_repository.get_by_id(
-            class_id,
-        )
-
-        if school_class is None:
-            raise ValueError("Class not found.")
-
-        if school_class.school_id != current_user.school_id:
-            raise ValueError("Class does not belong to your school.")
 
         mapping = await self.teacher_class_repository.get(
             current_user.id,
@@ -103,6 +115,11 @@ class AssignmentService:
 
         if mapping is None:
             raise ValueError("Teacher is not assigned to this class.")
+
+        if due_date.tzinfo is None:
+            due_date = due_date.replace(tzinfo=timezone.utc)
+        else:
+            due_date = due_date.astimezone(timezone.utc)
 
         if due_date <= datetime.now(timezone.utc):
             raise ValueError("Due date must be in the future.")
@@ -126,7 +143,7 @@ class AssignmentService:
                     assignment_id=assignment.id,
                 )
 
-                return assignment
+                return self._to_response(assignment)
 
         except Exception:
 
