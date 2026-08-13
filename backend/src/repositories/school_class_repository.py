@@ -17,6 +17,7 @@ from sqlalchemy.orm import selectinload
 from src.core.logger import logger
 from src.models.school_class import SchoolClass
 from src.models.teacher_class import TeacherClass
+from src.utils.class_name import normalize_class_name
 
 
 class SchoolClassRepository:
@@ -33,6 +34,7 @@ class SchoolClassRepository:
         """
 
         try:
+            school_class.normalized_name = normalize_class_name(school_class.name)
             self.db.add(school_class)
 
             await self.db.flush()
@@ -104,11 +106,13 @@ class SchoolClassRepository:
         Fetch class by name within a school.
         """
 
+        normalized_name = normalize_class_name(name)
+
         try:
             result = await self.db.execute(
                 select(SchoolClass).where(
                     SchoolClass.school_id == school_id,
-                    SchoolClass.name == name,
+                    SchoolClass.normalized_name == normalized_name,
                 )
             )
 
@@ -156,7 +160,7 @@ class SchoolClassRepository:
         """
 
         try:
-
+            school_class.normalized_name = normalize_class_name(school_class.name)
             await self.db.flush()
             await self.db.refresh(school_class)
 

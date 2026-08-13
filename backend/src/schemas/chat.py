@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from typing import Any, Literal
+from src.enums.intent import IntentName
 
 from pydantic import BaseModel, Field
 
@@ -21,10 +22,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatMessageRequest(BaseModel):
-    conversation_id: uuid.UUID | None = None
     message: str | None = None
-    file_name: str | None = None
-    file_content: str | None = None
 
 
 class ChatMessageResponse(BaseModel):
@@ -44,22 +42,8 @@ class ClarificationQuestionResult(BaseModel):
 
 
 class IntentResult(BaseModel):
-    intent: Literal[
-        "CREATE_ASSIGNMENT",
-        "UPDATE_ASSIGNMENT",
-        "SUBMIT_ASSIGNMENT",
-        "ROSTER_IMPORT",
-        "UNKNOWN",
-        "UNSAFE",
-    ]
+    intent: IntentName
     confidence: float = 0.0
-    extracted_data: dict[str, Any] = Field(default_factory=dict)
-    missing_fields: list[str] = Field(default_factory=list)
-    ambiguities: list[str] = Field(default_factory=list)
-    requires_clarification: bool = False
-    clarification_question: str | None = None
-    clarification_questions: list[str] = Field(default_factory=list)
-    proposed_action: dict[str, Any] = Field(default_factory=dict)
 
 
 class ApprovalRequest(BaseModel):

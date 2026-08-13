@@ -22,11 +22,9 @@ class LLMProvider(ABC):
     """
 
     @abstractmethod
-    async def classify_intent(
+    async def generate_response(
         self,
-        message: str,
-        file_content: str | None = None,
-        conversation_context: dict[str, Any] | None = None,
+        prompt: str,
     ) -> dict[str, Any]:
         raise NotImplementedError
 
@@ -72,17 +70,10 @@ class OllamaProvider(LLMProvider):
                 "AI service is currently unavailable. Please try again."
             ) from exc
 
-    async def classify_intent(
+    async def generate_response(
         self,
-        message: str,
-        file_content: str | None = None,
-        conversation_context: dict[str, Any] | None = None,
+        prompt: str,
     ) -> dict[str, Any]:
-        prompt = IntentPromptBuilder.build_intent_prompt(
-            message,
-            file_content,
-            conversation_context,
-        )
         payload = {
             "model": self.model,
             "stream": False,

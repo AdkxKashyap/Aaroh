@@ -30,11 +30,11 @@ from src.repositories.teacher_class_repository import TeacherClassRepository
 from src.repositories.user_repository import UserRepository
 from src.services.assignment_service import AssignmentService
 from src.services.auth_service import AuthService
-from src.services.chat_conversation_service import ChatConversationService
 from src.services.chat_message_service import ChatMessageService
 from src.services.chat_workflow import ChatWorkflowService
 from src.services.document_service import DocumentService
 from src.services.guardian_service import GuardianService
+from src.services.intent import IntentFactory
 from src.services.llm_provider import LLMClientFactory
 from src.services.role_service import RoleService
 from src.services.roster_import_service import RosterImportService
@@ -44,7 +44,6 @@ from src.services.storage import LocalFileStorage
 from src.services.student_service import StudentService
 from src.services.submission_service import SubmissionService
 from src.services.teacher_service import TeacherService
-from src.services.tool_registry import ToolRegistry
 from src.services.user_service import UserService
 
 
@@ -231,15 +230,6 @@ def get_chat_conversation_repository(
     return ChatConversationRepository(db)
 
 
-def get_chat_conversation_service(
-    repository: Annotated[
-        ChatConversationRepository,
-        Depends(get_chat_conversation_repository),
-    ],
-) -> ChatConversationService:
-    return ChatConversationService(repository)
-
-
 def get_student_repository(
     db: DbSession,
 ) -> StudentRepository:
@@ -349,12 +339,17 @@ def get_chat_workflow_service(
     llm_provider = LLMClientFactory.create("ollama")
     return ChatWorkflowService(
         llm_provider,
-        tool_registry=ToolRegistry(
-            assignment_service=assignment_service,
-            submission_service=submission_service,
-            roster_service=roster_service,
-            class_repository=class_repository,
-        ),
+    )
+
+
+def get_intent_factory(
+    assignment_service: Annotated[
+        AssignmentService,
+        Depends(get_assignment_service),
+    ],
+) -> IntentFactory:
+    return IntentFactory(
+        assignment_service=assignment_service,
     )
 
 
@@ -363,14 +358,14 @@ def get_chat_message_service(
         ChatWorkflowService,
         Depends(get_chat_workflow_service),
     ],
-    conversation_service: Annotated[
-        ChatConversationService,
-        Depends(get_chat_conversation_service),
+    intent_factory: Annotated[
+        IntentFactory,
+        Depends(get_intent_factory),
     ],
 ) -> ChatMessageService:
     return ChatMessageService(
         workflow_service=workflow_service,
-        conversation_service=conversation_service,
+        intent_factory=intent_factory,
     )
 
 
