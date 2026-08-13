@@ -116,6 +116,11 @@ class AssignmentService:
         if mapping is None:
             raise ValueError("Teacher is not assigned to this class.")
 
+        if due_date.tzinfo is None:
+            due_date = due_date.replace(tzinfo=timezone.utc)
+        else:
+            due_date = due_date.astimezone(timezone.utc)
+
         if due_date <= datetime.now(timezone.utc):
             raise ValueError("Due date must be in the future.")
 

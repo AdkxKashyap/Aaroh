@@ -6,6 +6,7 @@ import re
 from io import BytesIO
 from pathlib import Path
 
+import pymupdf
 from openpyxl import load_workbook
 
 
@@ -63,23 +64,26 @@ class ExtractionAdapter:
 
     @staticmethod
     def _extract_pdf_text(file_bytes: bytes) -> str:
+        if pymupdf is None:
+            raise ValueError(
+                "PyMuPDF is required to extract PDF text. Install PyMuPDF in the app environment."
+            )
+
         try:
-            raw = file_bytes.decode("latin-1")
-        except UnicodeDecodeError:
-            raw = file_bytes.decode("latin-1", errors="replace")
+            with pymupdf.open(stream=file_bytes, filetype="pdf") as document:
+                pages: list[str] = []
+                for page in document:
+                    text = page.get_text("text")
+                    if text and text.strip():
+                        pages.append(text.strip())
+                if pages:
+                    return "\n".join(pages)
+        except Exception as exc:
+            raise ValueError(
+                "PDF content could not be extracted with PyMuPDF."
+            ) from exc
 
-        matches = re.findall(r"\((.*?)\)", raw)
-        if matches:
-            text = " ".join(part.strip() for part in matches if part.strip())
-            if text:
-                return re.sub(r"\s+", " ", text).strip()
-
-        text = re.sub(r"[^\x20-\x7E\n\r\t]", " ", raw)
-        cleaned = re.sub(r"\s+", " ", text).strip()
-        if cleaned:
-            return cleaned
-
-        raise ValueError("PDF content could not be extracted.")
+        raise ValueError("No readable text was found in the PDF.")
 
     @staticmethod
     def _extract_xlsx_text(file_bytes: bytes) -> str:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from abc import ABC, abstractmethod
 from typing import Any, TypeVar
 
@@ -70,6 +71,23 @@ class OllamaProvider(LLMProvider):
                 "AI service is currently unavailable. Please try again."
             ) from exc
 
+    @staticmethod
+    def _extract_json(text: str) -> str:
+        cleaned = text.strip()
+        if not cleaned:
+            return cleaned
+
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            cleaned = cleaned[start : end + 1]
+
+        return cleaned
+
     async def generate_response(
         self,
         prompt: str,
@@ -80,6 +98,7 @@ class OllamaProvider(LLMProvider):
             "prompt": prompt,
             "options": {"temperature": 0.1},
         }
+        logger.info(f"LLM request payload: {payload}")
         raw = await self._post(payload)
         text = raw.get("response", "").strip()
         logger.info(f"LLM raw response: {text}")
@@ -88,8 +107,9 @@ class OllamaProvider(LLMProvider):
                 "LLM returned an empty response for intent classification."
             )
 
+        cleaned = self._extract_json(text)
         try:
-            return json.loads(text)
+            return json.loads(cleaned)
         except json.JSONDecodeError as exc:
             raise ValueError("LLM intent response was not valid JSON.") from exc
 

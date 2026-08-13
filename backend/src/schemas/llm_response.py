@@ -18,6 +18,12 @@ class AssignmentLLMResponse(LLMResponse):
 
     assignment_data: CreateAssignmentRequestWithClassName | None = None
 
+    @classmethod
+    def model_validate(cls, obj, *args, **kwargs):
+        if isinstance(obj, dict) and "assignment_data" not in obj:
+            obj = {"assignment_data": obj}
+        return super().model_validate(obj, *args, **kwargs)
+
 
 class RosterExtractionLLMResponse(LLMResponse):
     """

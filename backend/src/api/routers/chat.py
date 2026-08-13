@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from src.core.auth import get_current_user
 from src.dependencies.services import (
     get_chat_message_service,
@@ -26,17 +26,19 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
 )
 async def chat_message(
-    request: ChatMessageRequest,
+    message: Annotated[str | None, Form()] = None,
     current_user: Annotated[
         User,
         Depends(get_current_user),
-    ],
+    ] = None,
     message_service: Annotated[
         ChatMessageService,
         Depends(get_chat_message_service),
-    ],
+    ] = None,
     file: UploadFile | None = File(default=None),
 ):
+    request = ChatMessageRequest(message=message)
+
     if not request.message and file is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

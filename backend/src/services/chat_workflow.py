@@ -126,8 +126,6 @@ class ChatWorkflowService:
         required_roles = {
             # TODO: Simplify intent handling
             IntentName.CREATE_ASSIGNMENT: {RoleName.TEACHER},
-            IntentName.ROSTER_IMPORT: {RoleName.ADMIN},
-            IntentName.SUBMIT_ASSIGNMENT: {RoleName.STUDENT},
         }
         expected = required_roles.get(intent)
         if not expected:
@@ -172,7 +170,7 @@ class ChatWorkflowService:
         sanitized_message = PromptInjectionGuard.sanitize(message_text)
         sanitized_file_text = PromptInjectionGuard.sanitize(file_text)
 
-        prompt = IntentPromptBuilder.build_intent_prompt(
+        prompt = IntentPromptBuilder.build_prompt(
             sanitized_message,
             sanitized_file_text,
         )

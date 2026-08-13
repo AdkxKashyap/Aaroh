@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from src.core.logger import logger
 from src.schemas.chat import (
     ChatMessageRequest,
     ChatRequest,
@@ -25,8 +26,8 @@ class ChatMessageService:
         request: ChatMessageRequest,
         file=None,
     ) -> ChatResponse:
-        extracted_file_text = request.file_content or ""
-        file_name = request.file_name or ""
+        extracted_file_text = ""
+        file_name = ""
 
         if file is not None:
             file_bytes = await file.read()
@@ -34,7 +35,13 @@ class ChatMessageService:
             extracted_file_text = ExtractionAdapter.extract_text(
                 file_bytes, file.filename
             )
-
+        logger.info(
+            "Processing chat message",
+            user_id=getattr(current_user, "id", None),
+            school_id=getattr(current_user, "school_id", None),
+            file_name=file_name,
+            extracted_file_text=extracted_file_text,
+        )
         workflow_response = await self.workflow_service.process_message(
             current_user=current_user,
             request=ChatRequest(
